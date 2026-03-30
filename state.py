@@ -1,5 +1,6 @@
 import pygame
 from settings import *
+from characters import Player
 
 class State:
     def __init__(self, game):
@@ -26,7 +27,7 @@ class SplashScreen(State):
     def __init__(self, game):
         super().__init__(game)
 
-    def update(self, dt): # Loading a state/scene
+    def update(self, dt):
         if INPUTS['space']:
             Scene(self.game).enter_state()
             self.game.reset_inputs()
@@ -40,11 +41,28 @@ class Scene(State):
     def __init__(self, game):
         super().__init__(game)
 
-    def update(self, dt):  # Loading a state/scene
-        if INPUTS['space']:
-            SplashScreen(self.game).enter_state()
+        # For updating and drawing without having to do it individually
+        # Takes my objects properties for control
+        self.update_sprites = pygame.sprite.Group()
+        self.draw_sprites = pygame.sprite.Group()
+
+        self.player = Player(self.game, self, [self.update_sprites, self.draw_sprites], (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2), 'player')
+
+    # For ingame debugging visualization (displays accel, vel, etc.)
+    def debugger(self, debug_list):
+        for index, name in enumerate(debug_list):
+            self.game.render_text(name, COLORS['white'], self.game.primary_font, (10, 15 * index), False)
+
+    def update(self, dt):
+        if INPUTS['backspace']:
+            self.exit_state()
             self.game.reset_inputs()
+        self.update_sprites.update(dt)
 
     def draw(self, screen):
         screen.fill((COLORS['blue']))
-        self.game.render_text('Rogue Class GOAT, press space', COLORS['white'], self.game.head_font, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        self.game.render_text('press backspace to BACK', COLORS['white'], self.game.head_font, (SCREEN_WIDTH // 2, 10))
+        self.draw_sprites.draw(screen)
+        self.debugger([
+            str(f'FPS: {round(self.game.clock.get_fps(), 2)}')
+        ])

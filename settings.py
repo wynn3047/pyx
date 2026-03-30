@@ -1,3 +1,5 @@
+from pygame.math import Vector2 as vect
+
 SCREEN_WIDTH, SCREEN_HEIGHT = 400, 224
 TILE_SIZE = 16
 
@@ -6,6 +8,7 @@ PRIMARY_FONT = "assets/fonts/m5x7.ttf"
 
 INPUTS = {
     'escape' : False,
+    'backspace' : False,
     'space' : False,
     'up' : False,
     'down' : False,
