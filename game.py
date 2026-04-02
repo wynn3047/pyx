@@ -1,4 +1,4 @@
-import pygame, sys
+import pygame, sys, os
 from settings import *
 from state import SplashScreen
 
@@ -9,7 +9,7 @@ class Game:
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN|pygame.SCALED) # Scale to res
         self.head_font = pygame.font.Font(HEAD_FONT, TILE_SIZE)
-        self.primary_font = pygame.font.Font(PRIMARY_FONT, TILE_SIZE)
+        self.primary_font = pygame.font.Font(PRIMARY_FONT, 10)
         self.running = True
         self.fps = 60
 
@@ -99,9 +99,33 @@ class Game:
 
     # Text rendering on screen
     def render_text(self, text, color, font, pos, centralized=True):
-        text_surf = font.render(str(text), True, color)
+        text_surf = font.render(str(text), False, color)
         text_rect = text_surf.get_rect(center=pos) if centralized else text_surf.get_rect(topleft=pos)
         self.screen.blit(text_surf, text_rect)
+
+    # Implementing custom cursor
+    def custom_cursor(self, screen):
+        pygame.mouse.set_visible(False)
+        cursor_image = pygame.image.load('assets/mouse-cursor/my_custom_cursor.png').convert_alpha()
+        cursor_rect = cursor_image.get_rect(center=pygame.mouse.get_pos()) # Get tuple of x and y pos
+        cursor_image.set_alpha(235) # Slight transparency
+        screen.blit(cursor_image, cursor_rect)
+
+    # Load all images full file path from directory into a list
+    def get_images(self, path):
+        images = []
+        for file in os.listdir(path): # listdir gets filenames on that path dir
+            full_path = os.path.join(path, file) # combines and build the full formatted file path
+            image = pygame.image.load(full_path).convert_alpha()
+            images.append(image)
+        return images
+
+    # Creates empty dict to store filenames as keys
+    def get_animations(self, path):
+        animations = {}
+        for file_name in os.listdir(path): # listdir iterates through all files from that file path
+            animations.update({file_name: []}) # adds each filename as key with empty []
+        return animations
 
     # Game loop
     def loop(self):
@@ -111,6 +135,7 @@ class Game:
             # Always run the top of the state stack
             self.states[-1].update(dt)
             self.states[-1].draw(self.screen)
+            self.custom_cursor(self.screen)
             pygame.display.flip()
 
 if __name__ == '__main__':

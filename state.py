@@ -51,7 +51,7 @@ class Scene(State):
     # For ingame debugging visualization (displays accel, vel, etc.)
     def debugger(self, debug_list):
         for index, name in enumerate(debug_list):
-            self.game.render_text(name, COLORS['white'], self.game.primary_font, (10, 15 * index), False)
+            self.game.render_text(name, COLORS['white'], self.game.primary_font, (10, 15 * (index + 1)), False)
 
     def update(self, dt):
         if INPUTS['backspace']:
@@ -64,5 +64,6 @@ class Scene(State):
         self.game.render_text('press backspace to BACK', COLORS['white'], self.game.head_font, (SCREEN_WIDTH // 2, 10))
         self.draw_sprites.draw(screen)
         self.debugger([
-            str(f'FPS: {round(self.game.clock.get_fps(), 2)}')
+            str(f'FPS: {round(self.game.clock.get_fps(), 2)}'),
+            str(f'Vel: {round(self.player.vel, 2)}')
         ])

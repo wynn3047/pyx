@@ -9,14 +9,46 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         self.game = game
         self.scene = scene
         self.name = name
-        self.image = pygame.Surface((TILE_SIZE, TILE_SIZE * 1.5))
-        self.image.fill(COLORS['red'])
-        self.rect = self.image.get_rect(topleft = pos)
-        self.speed = 60
-        self.force = 2500
+
+        self.speed = 70
+        self.force = 2000
         self.accel = vect()
         self.vel = vect()
-        self.frict = -15
+        self.frict = -9
+
+        # from local var to stored in self*instance (can access self.animations)
+        self.image = pygame.Surface((TILE_SIZE, TILE_SIZE * 1.5)) # self. image = self.animations['idle'][self.frame_index].convert_alpha()
+        self.rect = self.image.get_rect(topleft=pos)
+
+        self.import_images(f'assets/characters/{self.name}/') # calls the char's dir path
+        self.frame_index = 0 # frame playback
+
+    def import_images(self, path):
+        self.animations = self.game.get_animations(path) # scans char dir {"idle": [], ...}
+
+        for animation in self.animations.keys():
+            full_path = path + animation # builds the full path with the animation dir name
+            self.animations[animation] = self.game.get_images(full_path) # appends the images for the specific dir name
+
+        # Whats actually gonn happen
+        # {
+        #     "idle": [surface1, surface2, surface3],
+        #     "walk": [surface4, surface5, surface6],
+        #     "run": [surface7, surface8]
+        # }
+
+    # ANIMATIONN!!
+    def animate(self, state, fps, loop=True):
+        self.frame_index += fps
+
+        if self.frame_index >= len(self.animations[state]) - 1: # -1, index starts at 0
+            if loop:
+                self.frame_index = 0 # playback loop
+            else:
+                self.frame_index = len(self.animations[state]) - 1 # last frame image
+
+        # Rounds down for smoother animation increment by decimal (0,3 =0, 0.4=0, 0.5=0, ..., 1.0=1)
+        self.image = self.animations[state][int(self.frame_index)]
 
     # Motions & Equations
     def physics(self, dt):
@@ -36,6 +68,7 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
 
     def update(self, dt):
         self.physics(dt)
+        self.animate('idle-right', 15 * dt) # 15 times smoother
 
 class Player(GameCharacter):
     def __init__(self, game, scene, groups, pos, name):
@@ -56,3 +89,8 @@ class Player(GameCharacter):
     def update(self, dt):
         self.physics(dt)
         self.movement()
+
+        # if self.vel.magnitude() < 1:
+        #     self.animate('idle-right', 15 * dt)
+        # else:
+        #     self.animate('run-right', 15 * dt)

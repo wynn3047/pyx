@@ -4,7 +4,7 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 400, 224
 TILE_SIZE = 16
 
 HEAD_FONT = "assets/fonts/alagard.ttf"
-PRIMARY_FONT = "assets/fonts/m5x7.ttf"
+PRIMARY_FONT = "assets/fonts/homespun.ttf"
 
 INPUTS = {
     'escape' : False,
