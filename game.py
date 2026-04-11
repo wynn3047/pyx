@@ -107,9 +107,10 @@ class Game:
     def custom_cursor(self, screen):
         pygame.mouse.set_visible(False)
         cursor_image = pygame.image.load('assets/mouse-cursor/my_custom_cursor.png').convert_alpha()
-        cursor_rect = cursor_image.get_rect(center=pygame.mouse.get_pos()) # Get tuple of x and y pos
+        scaled_cursor_image = pygame.transform.scale(cursor_image, (10, 10)) # scale image
+        cursor_rect = scaled_cursor_image.get_rect(topleft=(pygame.mouse.get_pos())) # Clicks for top left (0,0)
         cursor_image.set_alpha(235) # Slight transparency
-        screen.blit(cursor_image, cursor_rect)
+        screen.blit(scaled_cursor_image, cursor_rect)
 
     # Load all images full file path from directory into a list
     def get_images(self, path):

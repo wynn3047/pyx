@@ -14,14 +14,15 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         self.force = 2000
         self.accel = vect()
         self.vel = vect()
-        self.frict = -9
+        self.frict = -15
+
+        # Load images
+        self.import_images(f'assets/characters/{self.name}/')  # calls the char's dir path
+        self.frame_index = 0  # frame number
 
         # from local var to stored in self*instance (can access self.animations)
-        self.image = pygame.Surface((TILE_SIZE, TILE_SIZE * 1.5)) # self. image = self.animations['idle'][self.frame_index].convert_alpha()
+        self.image = self.animations['idle-right'][self.frame_index].convert_alpha()
         self.rect = self.image.get_rect(topleft=pos)
-
-        self.import_images(f'assets/characters/{self.name}/') # calls the char's dir path
-        self.frame_index = 0 # frame playback
 
     def import_images(self, path):
         self.animations = self.game.get_animations(path) # scans char dir {"idle": [], ...}
@@ -41,7 +42,7 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
     def animate(self, state, fps, loop=True):
         self.frame_index += fps
 
-        if self.frame_index >= len(self.animations[state]) - 1: # -1, index starts at 0
+        if self.frame_index >= len(self.animations[state]): #
             if loop:
                 self.frame_index = 0 # playback loop
             else:
@@ -60,7 +61,7 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         # Y Direction
         self.accel.y += self.vel.y * self.frict  # Applying increasing friction when accelerating
         self.vel.y += self.accel.y * dt  # Velocity change
-        self.rect.centery += self.vel.y * dt + 0.5 * self.accel.x * dt**2 # Moving center for intuitive interactions (Velret Integration)
+        self.rect.centery += self.vel.y * dt + 0.5 * self.accel.y * dt**2 # Moving center for intuitive interactions (Velret Integration)
 
         # Fix diagonal speed boost
         if self.vel.magnitude() >= self.speed: # magnitude() gets the speed of vel.x and vel.y
@@ -89,8 +90,7 @@ class Player(GameCharacter):
     def update(self, dt):
         self.physics(dt)
         self.movement()
-
-        # if self.vel.magnitude() < 1:
-        #     self.animate('idle-right', 15 * dt)
-        # else:
-        #     self.animate('run-right', 15 * dt)
+        if self.vel.magnitude() < 1:
+            self.animate('idle-right', 10 * dt)
+        else:
+            self.animate('run-right', 13 * dt)
