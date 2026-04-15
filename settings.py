@@ -27,5 +27,13 @@ COLORS = {
     'red' : (255, 0, 0),
     'green' : (0, 255, 0),
     'blue' : (69,78,99),
-    'charcoal_grey': (24, 29, 35)
+    'charcoal_grey': (24, 29, 35),
+    'medium-navy': (19,21,32)
 }
+
+LAYERS = ['background',
+          'objects',
+          'blocks',
+          'characters',
+          'particles',
+          'foreground']

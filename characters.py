@@ -23,6 +23,7 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         # from local var to stored in self*instance (can access self.animations)
         self.image = self.animations['idle-right'][self.frame_index].convert_alpha()
         self.rect = self.image.get_rect(topleft=pos)
+        self.pos = vect(self.rect.center) # Character precise coordinates
 
     def import_images(self, path):
         self.animations = self.game.get_animations(path) # scans char dir {"idle": [], ...}
@@ -56,20 +57,24 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         # X Direction
         self.accel.x += self.vel.x * self.frict # Applying increasing friction when accelerating
         self.vel.x += self.accel.x * dt # Velocity change
-        self.rect.centerx += self.vel.x * dt + 0.5 * self.accel.x * dt**2 # Moving center for intuitive interactions (Velret Integration)
+        self.pos.x += self.vel.x * dt + 0.5 * self.accel.x * dt**2 # Calculate the precise pos
 
         # Y Direction
-        self.accel.y += self.vel.y * self.frict  # Applying increasing friction when accelerating
-        self.vel.y += self.accel.y * dt  # Velocity change
-        self.rect.centery += self.vel.y * dt + 0.5 * self.accel.y * dt**2 # Moving center for intuitive interactions (Velret Integration)
+        self.accel.y += self.vel. y * self.frict
+        self.vel.y += self.accel.y * dt
+        self.pos.y += self.vel.y * dt + 0.5 * self.accel.y * dt**2
 
         # Fix diagonal speed boost
         if self.vel.magnitude() >= self.speed: # magnitude() gets the speed of vel.x and vel.y
-            self.vel = self.vel.normalize() * self.speed # normalize() sets magnitude to 1.0 instead of going 40% faster
+            self.vel = self.vel.normalize() * self.speed # normalize() sets magnitude to 1.0 instead of going 40% (1.4) faster
+
+        # Update rect center from the rounded float pos
+        self.rect.centerx = round(self.pos.x)
+        self.rect.centery = round(self.pos.y)
 
     def update(self, dt):
         self.physics(dt)
-        self.animate('idle-right', 15 * dt) # 15 times smoother
+        self.animate('idle-right', 15 * dt) # 15 times
 
 class Player(GameCharacter):
     def __init__(self, game, scene, groups, pos, name):
@@ -88,8 +93,8 @@ class Player(GameCharacter):
         else: self.accel.y = 0
 
     def update(self, dt):
-        self.physics(dt)
         self.movement()
+        self.physics(dt)
         if self.vel.magnitude() < 1:
             self.animate('idle-right', 10 * dt)
         else:

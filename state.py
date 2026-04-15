@@ -1,5 +1,6 @@
 import pygame
 from settings import *
+from camera import Camera
 from characters import Player
 from objects import Object
 from pytmx.util_pygame import load_pygame
@@ -36,12 +37,14 @@ class SplashScreen(State):
 
     def draw(self, screen):
         screen.fill((COLORS['charcoal_grey']))
-        self.game.render_text('ROGUEDAGOAT', COLORS['white'], self.game.head_font, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        self.game.render_text('PyX', COLORS['white'], self.game.head_font, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
 
 # After
 class Scene(State):
     def __init__(self, game):
         super().__init__(game)
+
+        self.camera = Camera(self)
 
         # For updating and drawing without having to do it individually
         # Takes my objects properties for control
@@ -61,19 +64,32 @@ class Scene(State):
             layers.append(layer.name)
 
         # We loop through every tile in that layer:
-        if 'blocks' in layers: # Walls/obstacles
+        if 'floors' in layers:
+            # calculate the position (x * TILE_SIZE)
+            # and create a new Object for it.
+            for x, y, surf in self.tmx_data.get_layer_by_name('floors').tiles():
+                Object([self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), surf)
+
+        if 'blocks' in layers:
             for x, y, surf in self.tmx_data.get_layer_by_name('blocks').tiles():
-                # calculate the position (x * TILE_SIZE)
-                # and create a new Object for it.
                 Object([self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), surf)
 
         # If there's an object layer named 'entries'
         if "entries" in layers:
-            for obj in self.tmx_data.get_layer_by_name('entries'): # get the name on this layer (0)
+            for obj in self.tmx_data.get_layer_by_name('entries'):  # get the name on this layer (0)
                 if obj.name == '0':
                     # Create player from this entry point
                     self.player = Player(self.game, self, [self.update_sprites, self.draw_sprites],
-                                         (obj.x, obj.y), 'player') # position where the object entry    point is
+                                         (obj.x, obj.y),
+                                         'player')  # position where the object entry    point is
+
+                    # Set the camera offset instantly so it doesn't slide from (0,0)
+                    self.camera.offset.x = self.player.rect.centerx - SCREEN_WIDTH / 2
+                    self.camera.offset.y = self.player.rect.centery - SCREEN_HEIGHT / 2
+
+        if 'detail 1' in layers:
+            for x, y, surf in self.tmx_data.get_layer_by_name('detail 1').tiles():
+                Object([self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), surf)
 
     # For ingame debugging visualization (displays accel, vel, etc.)
     def debugger(self, debug_list):
@@ -84,13 +100,19 @@ class Scene(State):
         if INPUTS['backspace']:
             self.exit_state()
             self.game.reset_inputs()
-        # if INPUTS['left_click']:
-        #     print(pygame.mouse.get_pos())
+
+        # Update all character logic (player movement, etc.)
         self.update_sprites.update(dt)
 
+        # figure out where the player moved.
+        self.camera.update(dt, self.player)
+
     def draw(self, screen):
-        screen.fill((COLORS['blue']))
-        self.draw_sprites.draw(screen)
+        # Instead of drawing sprites normally, we let the CAMERA do it.
+        # It takes all our draw_sprites and only draws the ones on screen
+        self.camera.draw(screen, self.draw_sprites)
+
+        #  Draw debug text
         self.debugger([
             str(f'FPS: {round(self.game.clock.get_fps(), 2)}'),
             str(f'Vel: {round(self.player.vel, 2)}')
