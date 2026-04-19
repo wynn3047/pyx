@@ -7,7 +7,13 @@ class Game:
 
         pygame.init()
         self.clock = pygame.time.Clock()
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN|pygame.SCALED) # Scale to res
+        self.screen_flags = pygame.FULLSCREEN | pygame.SCALED | pygame.DOUBLEBUF# Full res display and optimization
+        try:
+            self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), self.screen_flags)
+        except pygame.error:
+            # Fallback to windowed
+            self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SCALED)
+
         self.head_font = pygame.font.Font(HEAD_FONT, TILE_SIZE)
         self.primary_font = pygame.font.Font(PRIMARY_FONT, 10)
         self.running = True

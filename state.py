@@ -2,7 +2,7 @@ import pygame
 from settings import *
 from camera import Camera
 from characters import Player
-from objects import Object
+from objects import Object, Wall
 from pytmx.util_pygame import load_pygame
 
 class State:
@@ -50,6 +50,7 @@ class Scene(State):
         # Takes my objects properties for control
         self.update_sprites = pygame.sprite.Group()
         self.draw_sprites = pygame.sprite.Group()
+        self.block_sprites = pygame.sprite.Group()
 
         # Load Tilemap data
         self.tmx_data = load_pygame('scenes/0/0.tmx')
@@ -68,11 +69,11 @@ class Scene(State):
             # calculate the position (x * TILE_SIZE)
             # and create a new Object for it.
             for x, y, surf in self.tmx_data.get_layer_by_name('floors').tiles():
-                Object([self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), surf)
+                Object([self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), 'floors', surf)
 
         if 'blocks' in layers:
             for x, y, surf in self.tmx_data.get_layer_by_name('blocks').tiles():
-                Object([self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), surf)
+                Wall([self.block_sprites, self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), 'blocks', surf)
 
         # If there's an object layer named 'entries'
         if "entries" in layers:
@@ -81,6 +82,7 @@ class Scene(State):
                     # Create player from this entry point
                     self.player = Player(self.game, self, [self.update_sprites, self.draw_sprites],
                                          (obj.x, obj.y),
+                                         'blocks',
                                          'player')  # position where the object entry    point is
 
                     # Set the camera offset instantly so it doesn't slide from (0,0)
@@ -89,7 +91,7 @@ class Scene(State):
 
         if 'detail 1' in layers:
             for x, y, surf in self.tmx_data.get_layer_by_name('detail 1').tiles():
-                Object([self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), surf)
+                Object([self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), 'detail 1', surf)
 
     # For ingame debugging visualization (displays accel, vel, etc.)
     def debugger(self, debug_list):

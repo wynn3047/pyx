@@ -1,5 +1,7 @@
 import pygame, csv
+import math
 from settings import *
+from characters import Player
 
 class Camera(pygame.sprite.Group):
     def __init__(self, scene):
@@ -10,8 +12,8 @@ class Camera(pygame.sprite.Group):
         # rectangle the size of the monitor
         self.visible_window = pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
         self.scene_size = self.get_scene_size(scene)
-        self.delay = 2
-        self.peek_limit = 4
+        self.delay = 5
+        self.peek_limit = 3
 
     # Capturing screen size for tilemap
     def get_scene_size(self, scene):
@@ -36,9 +38,9 @@ class Camera(pygame.sprite.Group):
         self.offset.y += (target_y - self.offset.y) * (self.delay * dt)
 
         # Snaps if the offset is very close to 1 pixel
-        if abs(target_x - self.offset.x) < 1:
+        if abs(target_x - self.offset.x) < 1.1:
             self.offset.x = target_x
-        if abs(target_y - self.offset.y) < 1:
+        if abs(target_y - self.offset.y) < 1.1:
             self.offset.y = target_y
 
         # Set camera shot for map boundary (0 for left side, and 400 for right side
@@ -46,16 +48,37 @@ class Camera(pygame.sprite.Group):
         self.offset.y = max(0, min(self.offset.y, self.scene_size[1] - SCREEN_HEIGHT))
 
         # We move our "visible window" to match where the camera is looking.
-        self.visible_window.x = self.offset.x
-        self.visible_window.y = self.offset.y
+        self.visible_window.x = math.floor(self.offset.x)
+        self.visible_window.y = math.floor(self.offset.y)
+
+    def show_hitbox(self, screen, sprite, offset):
+        # Visual hitbox
+        temp_hitbox = sprite.hitbox.copy()
+        temp_hitbox.topleft -= offset
+
+        if isinstance(sprite, Player):
+            color = (0, 255, 0)
+        elif sprite.z == 'blocks':
+            color = (255, 0, 0)
+        else:
+            color = (255, 255, 0)
+
+        pygame.draw.rect(screen, color, temp_hitbox, 1)
+        pygame.draw.circle(screen, color, temp_hitbox.center, 1)
 
     def draw(self, screen, group):
         screen.fill((COLORS['medium-navy']))
-        draw_offset = vect(round(self.offset.x), round(self.offset.y))
-        # 2. Loop through every single object in the game
-        for sprite in group:
-            # colliderect returns True if the sprite is touching the visible_window.
-            if self.visible_window.colliderect(sprite.rect):
-                # Subtract the camera offset from the object's real world position.
-                offset_pos = sprite.rect.topleft - draw_offset
-                screen.blit(sprite.image, offset_pos) # Put the image on the screen at that shifted position.
+        draw_offset = vect(math.floor(self.offset.x), math.floor(self.offset.y))
+        # Sort by the bottom of the rect (the feet) for depth
+        sorted_sprites = sorted(group, key=lambda sprite: sprite.rect.bottom)
+        for layer in LAYERS:
+            # 2. Loop through every single object in the game
+            for sprite in sorted_sprites:
+                # colliderect returns True if the sprite is touching the visible_window.
+                if self.visible_window.colliderect(sprite.rect) and sprite.z == layer:
+                    # Subtract the camera offset from the object's real world position.
+                    offset_pos = sprite.rect.topleft - draw_offset
+                    screen.blit(sprite.image, offset_pos) # Put the image on the screen at that shifted position.
+
+                    if DEBUG_HITBOXES:
+                        self.show_hitbox(screen, sprite, draw_offset)

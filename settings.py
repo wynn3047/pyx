@@ -6,6 +6,8 @@ TILE_SIZE = 16
 HEAD_FONT = "assets/fonts/alagard.ttf"
 PRIMARY_FONT = "assets/fonts/homespun.ttf"
 
+DEBUG_HITBOXES = False
+
 INPUTS = {
     'escape' : False,
     'backspace' : False,
@@ -31,9 +33,12 @@ COLORS = {
     'medium-navy': (19,21,32)
 }
 
+# Layer order top to bottom
 LAYERS = ['background',
           'objects',
+          'floors',
           'blocks',
           'characters',
+          'detail 1',
           'particles',
           'foreground']

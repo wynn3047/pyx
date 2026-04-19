@@ -3,13 +3,13 @@ from settings import *
 
 # Characters will inherit from this class
 class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
-    def __init__(self, game, scene, groups, pos, name):
+    def __init__(self, game, scene, groups, pos, z, name):
         super().__init__(groups)
 
         self.game = game
         self.scene = scene
         self.name = name
-
+        self.z = z
         self.speed = 70
         self.force = 2000
         self.accel = vect()
@@ -23,6 +23,11 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         # from local var to stored in self*instance (can access self.animations)
         self.image = self.animations['idle-right'][self.frame_index].convert_alpha()
         self.rect = self.image.get_rect(topleft=pos)
+        
+        # Initialize Hitbox centered on the Rect
+        self.hitbox = self.rect.copy().inflate(-self.rect.width / 2, -self.rect.height / 2)
+        self.hitbox.center = self.rect.center
+
         self.pos = vect(self.rect.center) # Character precise coordinates
 
     def import_images(self, path):
@@ -52,33 +57,61 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         # Rounds down for smoother animation increment by decimal (0,3 =0, 0.4=0, 0.5=0, ..., 1.0=1)
         self.image = self.animations[state][int(self.frame_index)]
 
+    def get_collides(self, group):
+        collidable_lists = pygame.sprite.spritecollide(self, group, False)
+        return collidable_lists
+
+    def collisions(self, axis, collidable_sprites):
+        for sprite in collidable_sprites:
+            if self.hitbox.colliderect(sprite.hitbox):
+                if axis == 'x':
+                    if self.vel.x >= 0: self.hitbox.right = sprite.hitbox.left
+                    if self.vel.x <= 0: self.hitbox.left = sprite.hitbox.right
+                    self.vel.x = 0
+                    self.pos.x = self.hitbox.centerx
+                if axis == 'y':
+                    if self.vel.y >= 0: self.hitbox.bottom = sprite.hitbox.top
+                    if self.vel.y <= 0: self.hitbox.top = sprite.hitbox.bottom
+                    self.vel.y = 0
+                    self.pos.y = self.hitbox.centery
+
+        # Sync the visual rect to the physical hitbox
+        self.rect.center = self.hitbox.center
+
     # Motions & Equations
     def physics(self, dt):
+        # Optimization: Get potential collisions once per frame
+        collidable_sprites = self.get_collides(self.scene.block_sprites)
+
         # X Direction
         self.accel.x += self.vel.x * self.frict # Applying increasing friction when accelerating
         self.vel.x += self.accel.x * dt # Velocity change
         self.pos.x += self.vel.x * dt + 0.5 * self.accel.x * dt**2 # Calculate the precise pos
+        self.hitbox.centerx = self.pos.x
+        self.collisions('x', collidable_sprites)
 
         # Y Direction
         self.accel.y += self.vel. y * self.frict
         self.vel.y += self.accel.y * dt
         self.pos.y += self.vel.y * dt + 0.5 * self.accel.y * dt**2
+        self.hitbox.centery = self.pos.y
+        self.collisions('y', collidable_sprites)
 
         # Fix diagonal speed boost
-        if self.vel.magnitude() >= self.speed: # magnitude() gets the speed of vel.x and vel.y
-            self.vel = self.vel.normalize() * self.speed # normalize() sets magnitude to 1.0 instead of going 40% (1.4) faster
+        if self.vel.magnitude() >= self.speed:  # magnitude() gets the speed of vel.x and vel.y
+            self.vel = self.vel.normalize() * self.speed  # normalize() sets magnitude to 1.0 instead of going 40% (1.4) faster
 
-        # Update rect center from the rounded float pos
-        self.rect.centerx = round(self.pos.x)
-        self.rect.centery = round(self.pos.y)
+        # Final sync of coordinates
+        self.rect.center = self.pos
 
     def update(self, dt):
         self.physics(dt)
         self.animate('idle-right', 15 * dt) # 15 times
 
 class Player(GameCharacter):
-    def __init__(self, game, scene, groups, pos, name):
-        super().__init__(game, scene, groups, pos, name)
+    def __init__(self, game, scene, groups, pos, z ,name):
+        super().__init__(game, scene, groups, pos, z, name)
+        self.hitbox = self.rect.copy().inflate(-self.rect.width // 2, -self.rect.height // 2) # Custom hitbox for player
 
     def movement(self):
         # X inputs
