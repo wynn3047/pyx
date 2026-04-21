@@ -7,6 +7,7 @@ HEAD_FONT = "assets/fonts/alagard.ttf"
 PRIMARY_FONT = "assets/fonts/homespun.ttf"
 
 DEBUG_HITBOXES = False
+DEBUG_TEXT = True
 
 INPUTS = {
     'escape' : False,
@@ -21,6 +22,7 @@ INPUTS = {
     'right_click' : False,
     'scroll_up' : False,
     'scroll_down' : False,
+    'enter': False
 }
 
 COLORS = {

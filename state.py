@@ -1,7 +1,7 @@
 import pygame
 from settings import *
 from camera import Camera
-from characters import Player
+from characters import Player, GameCharacter
 from objects import Object, Wall
 from pytmx.util_pygame import load_pygame
 
@@ -31,7 +31,7 @@ class SplashScreen(State):
         super().__init__(game)
 
     def update(self, dt):
-        if INPUTS['space']:
+        if INPUTS['enter']:
             Scene(self.game).enter_state()
             self.game.reset_inputs()
 
@@ -89,6 +89,14 @@ class Scene(State):
                     self.camera.offset.x = self.player.rect.centerx - SCREEN_WIDTH / 2
                     self.camera.offset.y = self.player.rect.centery - SCREEN_HEIGHT / 2
 
+        if "entities" in layers:
+            for obj in self.tmx_data.get_layer_by_name('entities'):  # get the name on this layer (0)
+                if obj.name == 'enemy':
+                    # Create player from this entry point
+                    self.enemy = GameCharacter(self.game, self, [self.update_sprites, self.draw_sprites],
+                                         (obj.x, obj.y),
+                                         'blocks',
+                                         'enemy')
         if 'detail 1' in layers:
             for x, y, surf in self.tmx_data.get_layer_by_name('detail 1').tiles():
                 Object([self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), 'detail 1', surf)
@@ -115,7 +123,10 @@ class Scene(State):
         self.camera.draw(screen, self.draw_sprites)
 
         #  Draw debug text
-        self.debugger([
-            str(f'FPS: {round(self.game.clock.get_fps(), 2)}'),
-            str(f'Vel: {round(self.player.vel, 2)}')
-        ])
+        if DEBUG_TEXT:
+            self.debugger([
+                str(f'FPS: {round(self.game.clock.get_fps(), 2)}'),
+                str(f'Vel: {round(self.player.vel, 2)}'),
+                str(f'Pos: ({int(self.player.pos.x)}, {int(self.player.pos.y)})'),
+                str(f'State: {self.player.state}')
+            ])

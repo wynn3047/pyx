@@ -1,7 +1,6 @@
 import pygame, csv
 import math
 from settings import *
-from characters import Player
 
 class Camera(pygame.sprite.Group):
     def __init__(self, scene):
@@ -56,6 +55,7 @@ class Camera(pygame.sprite.Group):
         temp_hitbox = sprite.hitbox.copy()
         temp_hitbox.topleft -= offset
 
+        from characters import Player
         if isinstance(sprite, Player):
             color = (0, 255, 0)
         elif sprite.z == 'blocks':

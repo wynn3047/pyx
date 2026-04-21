@@ -7,13 +7,15 @@ class Game:
 
         pygame.init()
         self.clock = pygame.time.Clock()
-        self.screen_flags = pygame.FULLSCREEN | pygame.SCALED | pygame.DOUBLEBUF# Full res display and optimization
+        self.screen_flags = pygame.SCALED | pygame.DOUBLEBUF
+        # Fall back to window if fullscreen doesn't work
         try:
-            self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), self.screen_flags)
+            self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), self.screen_flags | pygame.FULLSCREEN)
         except pygame.error:
             # Fallback to windowed
-            self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SCALED)
+            self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), self.screen_flags)
 
+        pygame.display.set_caption("PyX")
         self.head_font = pygame.font.Font(HEAD_FONT, TILE_SIZE)
         self.primary_font = pygame.font.Font(PRIMARY_FONT, 10)
         self.running = True
@@ -48,6 +50,8 @@ class Game:
                     INPUTS['left'] = True
                 elif event.key in (pygame.K_RIGHT, pygame.K_d):
                     INPUTS['right'] = True
+                elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    INPUTS['enter'] = True
 
             # When released
             if event.type == pygame.KEYUP:
@@ -63,6 +67,8 @@ class Game:
                     INPUTS['left'] = False
                 elif event.key in (pygame.K_RIGHT, pygame.K_d):
                     INPUTS['right'] = False
+                elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    INPUTS['enter'] = False
 
             # Mouse events
             if event.type == pygame.MOUSEWHEEL:
