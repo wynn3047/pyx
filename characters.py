@@ -29,7 +29,7 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         self.hitbox.center = self.rect.center
         self.pos = vect(self.rect.center) # Character precise coordinates
         self.last_direction = 'right'
-        self.state = Idle()
+        self.state = Idle(self)
 
     def import_images(self, path):
         self.animations = self.game.get_animations(path) # scans char dir {"idle": [], ...}
@@ -106,19 +106,19 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         self.rect.center = self.hitbox.center
 
     # Motions & Equations
-    def physics(self, dt):
+    def physics(self, dt, frict):
         # Optimization: Get potential collisions once per frame
         collidable_sprites = self.get_collides(self.scene.block_sprites)
 
         # X Direction
-        self.accel.x += self.vel.x * self.frict # Applying increasing friction when accelerating
+        self.accel.x += self.vel.x * frict # Applying increasing friction when accelerating
         self.vel.x += self.accel.x * dt # Velocity change
         self.pos.x += self.vel.x * dt + 0.5 * self.accel.x * dt**2 # Calculate the precise pos
         self.hitbox.centerx = self.pos.x
         self.collisions('x', collidable_sprites)
 
         # Y Direction
-        self.accel.y += self.vel. y * self.frict
+        self.accel.y += self.vel. y * frict
         self.vel.y += self.accel.y * dt
         self.pos.y += self.vel.y * dt + 0.5 * self.accel.y * dt**2
         self.hitbox.centery = self.pos.y
@@ -141,68 +141,36 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         self.change_state()
         self.state.update(dt, self)
 
-class Player(GameCharacter):
-    def __init__(self, game, scene, groups, pos, z ,name):
-        super().__init__(game, scene, groups, pos, z, name)
-        self.hitbox = self.rect.copy().inflate(-self.rect.width + 9, -self.rect.height + 1) # Custom hitbox for player
-
-    def movement(self):
-        # X inputs
-        if INPUTS['left']: self.accel.x = -self.force
-        elif INPUTS['right']: self.accel.x = self.force
-        else:
-            self.accel.x = 0
-
-        # Y inputs
-        if INPUTS['up']: self.accel.y = -self.force
-        elif INPUTS['down']: self.accel.y = self.force
-        else: self.accel.y = 0
 
 class Idle:
+    def __init__(self, character):
+        character.frame_index = 0
+
     def __str__(self):
         return self.__class__.__name__
 
     def enter_state(self, character):
         if character.vel.magnitude() > 1: # Any movement transition to Run class
-            return Run()
-
-        if INPUTS['space']:
-            return Dash()
+            return Run(character)
 
     def update(self, dt, character):
         character.animate(f'idle-{character.get_direction()}', 10 * dt)
         character.movement()
-        character.physics(dt)
+        character.physics(dt, character.frict)
 
 
 class Run:
+    def __init__(self, character):
+        Idle.__init__(self, character)
+
     def __str__(self):
         return self.__class__.__name__
 
     def enter_state(self, character):
         if character.vel.magnitude() < 1: # Flip back to idle
-            return Idle()
-
-        if INPUTS['space']:
-            return Dash()
+            return Idle(character)
 
     def update(self, dt, character):
         character.animate(f'run-{character.get_direction()}', 15 * dt)
         character.movement()
-        character.physics(dt)
-
-class Dash:
-    def __init__(self):
-        self.timer = 3
-
-    def __str__(self):
-        return self.__class__.__name__
-
-    def enter_state(self, character):
-        if self.timer < 0:
-            return Idle()
-
-    def update(self, dt, character):
-        self.timer -= dt
-        character.animate(f'throw1-{character.get_direction()}', 15 * dt)
-        character.vel = vect()
+        character.physics(dt, character.frict)

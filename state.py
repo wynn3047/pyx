@@ -1,7 +1,8 @@
 import pygame
 from settings import *
 from camera import Camera
-from characters import Player, GameCharacter
+from characters import GameCharacter
+from player import Player
 from objects import Object, Wall
 from pytmx.util_pygame import load_pygame
 
@@ -127,6 +128,6 @@ class Scene(State):
             self.debugger([
                 str(f'FPS: {round(self.game.clock.get_fps(), 2)}'),
                 str(f'Vel: {round(self.player.vel, 2)}'),
-                str(f'Pos: ({int(self.player.pos.x)}, {int(self.player.pos.y)})'),
+                str(f'Pos: ({round(self.player.pos.x)}, {round(self.player.pos.y)})'),
                 str(f'State: {self.player.state}')
             ])

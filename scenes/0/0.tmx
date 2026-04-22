@@ -102,7 +102,7 @@
 </data>
  </layer>
  <objectgroup id="5" name="entities">
-  <object id="18" name="enemy" x="338.25" y="209.75">
+  <object id="18" name="enemy" x="533.5" y="218.25">
    <point/>
   </object>
  </objectgroup>
