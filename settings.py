@@ -6,7 +6,7 @@ TILE_SIZE = 16
 HEAD_FONT = "assets/fonts/alagard.ttf"
 PRIMARY_FONT = "assets/fonts/homespun.ttf"
 
-DEBUG_HITBOXES = False
+DEBUG_HITBOXES = True
 DEBUG_TEXT = True
 
 INPUTS = {
@@ -45,6 +45,13 @@ LAYERS = ['background',
           'detail 1',
           'particles',
           'foreground']
+
+SHADOW_CONFIG = {
+    'height': 6, # Pixel height of ellipse
+    'alpha': 100, # Transparency
+    'offset_y': 4, # Position above ground 
+    'width_scale': 0.9 # Width percentage of sprite width (narrower)
+}
 
 SCENE_DATA = {
     0: {1: 1},

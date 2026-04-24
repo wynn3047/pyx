@@ -53,20 +53,29 @@ class Camera(pygame.sprite.Group):
 
     def show_hitbox(self, screen, sprite, offset):
         # Visual hitbox
-        temp_hitbox = sprite.hitbox.copy()
-        temp_hitbox.topleft -= offset
-
         from player import Player
+        
         if isinstance(sprite, Player):
             color = (0, 255, 0)
-        elif sprite.z == 'blocks':
+        elif sprite.z in ('blocks', 'holes'):
             color = (255, 0, 0)
         else:
-            color = (255, 255, 0)
+            color = None
+            
+        combat_color = (0, 200, 255)
 
-        pygame.draw.rect(screen, color, temp_hitbox, 1)
-        pygame.draw.circle(screen, color, temp_hitbox.center, 1)
-
+        if color:
+            temp_hitbox = sprite.hitbox.copy()
+            temp_hitbox.topleft -= offset
+            pygame.draw.rect(screen, color, temp_hitbox, 1)
+            pygame.draw.circle(screen, color, temp_hitbox.center, 1)
+        
+        if hasattr(sprite, 'combat_hitbox'):
+            # For sprites that have combat hitbox attribute
+            temp_combat = sprite.combat_hitbox.copy()
+            temp_combat.topleft -= offset
+            pygame.draw.rect(screen, combat_color, temp_combat, 1)
+            
     def draw(self, screen, group):
         screen.fill((COLORS['medium_navy']))
         draw_offset = vect(math.floor(self.offset.x), math.floor(self.offset.y))
@@ -79,6 +88,14 @@ class Camera(pygame.sprite.Group):
                 if self.visible_window.colliderect(sprite.rect) and sprite.z == layer:
                     # Subtract the camera offset from the object's real world position.
                     offset_pos = sprite.rect.topleft - draw_offset
+                    
+                    if layer == 'blocks' and hasattr(sprite, 'shadow_surf'):
+                        # Draws sprite's shadow  on bottom
+                        actual_width = sprite.image.get_width()
+                        shadow_x = offset_pos[0] + (actual_width - sprite.shadow_surf.get_width() - 0.5)
+                        shadow_y = offset_pos[1] + sprite.rect.height - sprite.shadow_offset_y
+                        screen.blit(sprite.shadow_surf, (shadow_x, shadow_y))
+
                     screen.blit(sprite.image, offset_pos) # Put the image on the screen at that shifted position.
 
                     if DEBUG_HITBOXES:

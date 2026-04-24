@@ -150,5 +150,7 @@ class Scene(State):
                 str(f'Vel: {round(self.player.vel, 2)}'),
                 str(f'Pos: ({round(self.player.pos.x)}, {round(self.player.pos.y)})'),
                 str(f'State: {self.player.state}'),
-                str(f'Mouse Pos: ({round(pygame.mouse.get_pos()[0])}, {round(pygame.mouse.get_pos()[1])})')
+                str(f'Mouse Pos: ({round(pygame.mouse.get_pos()[0])}, {round(pygame.mouse.get_pos()[1])})'),
+                str(f'Tumble Charge: {self.player.tumble_charges}'),
+                str(f'Tumble CD: {round(self.player.tumble_cooldown_timer, 1)}')
             ])

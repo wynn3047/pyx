@@ -24,13 +24,25 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         self.image = self.animations[f'idle-{direction}'][self.frame_index].convert_alpha()
         self.rect = self.image.get_rect(topleft=pos)
 
-        # Initialize Hitbox centered on the Rect
-        self.hitbox = self.rect.copy().inflate(-self.rect.width / 2, -self.rect.height / 2)
+        # Movement hitbox (for wall collisions & p6)
+        self.hitbox = self.rect.copy().inflate(-self.rect.width + 9, -self.rect.height + 1)
         self.hitbox.center = self.rect.center
+        
+        # Combat hitbox (for contact dmg detection)
+        self.combat_hitbox = self.rect.copy().inflate(-4, -4)
+        self.combat_hitbox.center = self.rect.center
+        
         self.pos = vect(self.rect.center) # Character precise coordinates
         self.last_direction = direction
         self.state = Idle(self)
 
+        # Circle/Ellpise shadow 
+        shadow_width = int(self.rect.width * SHADOW_CONFIG['width_scale'])
+        shadow_height = SHADOW_CONFIG['height']
+        self.shadow_surf = pygame.Surface((shadow_width, shadow_height), pygame.SRCALPHA) # RGBA flag
+        pygame.draw.ellipse(self.shadow_surf, (0, 0, 0, SHADOW_CONFIG['alpha']), self.shadow_surf.get_rect())
+        self.shadow_offset_y = SHADOW_CONFIG['offset_y'] # For camera
+        
     def import_images(self, path):
         self.animations = self.game.get_animations(path) # scans char dir {"idle": [], ...}
 
@@ -128,9 +140,10 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         if self.vel.magnitude() >= self.speed:  # magnitude() gets the speed of vel.x and vel.y
             self.vel = self.vel.normalize() * self.speed  # normalize() sets magnitude to 1.0 instead of going 40% (1.4) faster
 
-        # Final sync of coordinates
+        # Keep hitboxes synced
         self.rect.center = self.pos
-
+        self.combat_hitbox.center = self.rect.center
+        
     def change_state(self):
         new_state = self.state.enter_state(self)
         if new_state: self.state = new_state
