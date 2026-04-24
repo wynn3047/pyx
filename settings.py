@@ -29,18 +29,24 @@ COLORS = {
     'black' : (0, 0, 0),
     'white' : (255, 255, 255),
     'red' : (255, 0, 0),
-    'green' : (0, 255, 0),
+    'green' : (0, 255, 0), 
     'blue' : (69,78,99),
     'charcoal_grey': (24, 29, 35),
-    'medium-navy': (19,21,32)
+    'medium_navy': (19,21,32)
 }
 
 # Layer order top to bottom
 LAYERS = ['background',
           'objects',
           'floors',
+          'holes',
           'blocks',
           'characters',
           'detail 1',
           'particles',
           'foreground']
+
+SCENE_DATA = {
+    0: {1: 1},
+    1: {1: 0}
+}

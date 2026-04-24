@@ -3,7 +3,7 @@ from settings import *
 
 # Characters will inherit from this class
 class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
-    def __init__(self, game, scene, groups, pos, z, name):
+    def __init__(self, game, scene, groups, pos, z, name, direction='right'):
         super().__init__(groups)
 
         self.game = game
@@ -21,14 +21,14 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         self.frame_index = 0  # frame number
 
         # from local var to stored in self*instance (can access self.animations)
-        self.image = self.animations['idle-right'][self.frame_index].convert_alpha()
+        self.image = self.animations[f'idle-{direction}'][self.frame_index].convert_alpha()
         self.rect = self.image.get_rect(topleft=pos)
 
         # Initialize Hitbox centered on the Rect
         self.hitbox = self.rect.copy().inflate(-self.rect.width / 2, -self.rect.height / 2)
         self.hitbox.center = self.rect.center
         self.pos = vect(self.rect.center) # Character precise coordinates
-        self.last_direction = 'right'
+        self.last_direction = direction
         self.state = Idle(self)
 
     def import_images(self, path):

@@ -2,11 +2,28 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="931da54e-9be4-4979-bbc2-39aaf6e410e3" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/player.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-left/0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-left/1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-left/2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-left/3.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-left/4.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-left/5.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-left/6.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-left/7.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-left/8.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-left/9.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-right/0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-right/1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-right/2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-right/3.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-right/4.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-right/5.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-right/6.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-right/7.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-right/8.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/characters/player/tumble-right/9.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/characters.py" beforeDir="false" afterPath="$PROJECT_DIR$/characters.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/0/0.tmx" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/0/0.tmx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/state.py" beforeDir="false" afterPath="$PROJECT_DIR$/state.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/player.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -31,25 +48,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Python.game.executor&quot;: &quot;Run&quot;,
-    &quot;Python.main.executor&quot;: &quot;Run&quot;,
-    &quot;Python.settings.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/pyroguedagoat/assets/characters/enemy&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.fileTypes&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.game.executor": "Run",
+    "Python.main.executor": "Run",
+    "Python.settings.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/pyroguedagoat/assets/characters/player",
+    "settings.editor.selected.configurable": "preferences.fileTypes"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="C:\pyroguedagoat\assets\characters\enemy" />
       <recent name="C:\pyroguedagoat\assets\characters\player" />
+      <recent name="C:\pyroguedagoat\assets\characters\enemy" />
       <recent name="C:\pyroguedagoat\assets\characters" />
       <recent name="C:\pyroguedagoat\assets\tilesets" />
       <recent name="C:\pyroguedagoat\assets\characters\player\idle-right" />

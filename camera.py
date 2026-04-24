@@ -4,7 +4,7 @@ from settings import *
 
 class Camera(pygame.sprite.Group):
     def __init__(self, scene):
-        # self.offset is the "Invisible Hand" that pushes the world map.
+        super().__init__()
         # It stores how far we have scrolled from the top-left (0,0) of the world.
         self.offset = vect()
         
@@ -16,7 +16,8 @@ class Camera(pygame.sprite.Group):
 
     # Capturing screen size for tilemap
     def get_scene_size(self, scene):
-        with open('scenes/0/0.csv', newline='') as csvfile:
+        # Open current scene's CSV to get its dimensions
+        with open(f'scenes/{scene.current_scene}/{scene.current_scene}.csv', newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter=',')
             for row in reader:
                 cols = (len(row)) # Len of cells in row
@@ -55,7 +56,7 @@ class Camera(pygame.sprite.Group):
         temp_hitbox = sprite.hitbox.copy()
         temp_hitbox.topleft -= offset
 
-        from characters import Player
+        from player import Player
         if isinstance(sprite, Player):
             color = (0, 255, 0)
         elif sprite.z == 'blocks':
@@ -67,7 +68,7 @@ class Camera(pygame.sprite.Group):
         pygame.draw.circle(screen, color, temp_hitbox.center, 1)
 
     def draw(self, screen, group):
-        screen.fill((COLORS['medium-navy']))
+        screen.fill((COLORS['medium_navy']))
         draw_offset = vect(math.floor(self.offset.x), math.floor(self.offset.y))
         # Sort by the bottom of the rect (the feet) for depth
         sorted_sprites = sorted(group, key=lambda sprite: sprite.rect.bottom)

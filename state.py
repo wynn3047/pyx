@@ -1,9 +1,10 @@
 import pygame
 from settings import *
 from camera import Camera
+from transition import Transition
 from characters import GameCharacter
 from player import Player
-from objects import Object, Wall
+from objects import Collider,Object, Wall, Holes
 from pytmx.util_pygame import load_pygame
 
 class State:
@@ -11,8 +12,8 @@ class State:
         self.game = game
         self.prev_state = None
 
-    # Screen state handler [BACK > BACK > MAIN]
     def enter_state(self):
+        # Screen state handler [BACK > BACK > MAIN]
         if len(self.game.states) > 1:
             self.prev_state = self.game.states[-1]
         self.game.states.append(self)
@@ -26,14 +27,14 @@ class State:
     def draw(self, screen):
         pass
 
-# Screen before loading the game
 class SplashScreen(State):
+    # Screen before loading the game
     def __init__(self, game):
         super().__init__(game)
 
     def update(self, dt):
         if INPUTS['enter']:
-            Scene(self.game).enter_state()
+            Scene(self.game, '0', '0').enter_state()
             self.game.reset_inputs()
 
     def draw(self, screen):
@@ -42,68 +43,86 @@ class SplashScreen(State):
 
 # After
 class Scene(State):
-    def __init__(self, game):
+    def __init__(self, game, current_scene, entry_point):
         super().__init__(game)
-
+        
+        # Scene switching 
+        self.current_scene = current_scene # Folder name of the map
+        self.entry_point = entry_point # Door or spawn point ID
+        
         self.camera = Camera(self)
-
-        # For updating and drawing without having to do it individually
-        # Takes my objects properties for control
+        
+        # Containers for managing sprite objects 
         self.update_sprites = pygame.sprite.Group()
         self.draw_sprites = pygame.sprite.Group()
         self.block_sprites = pygame.sprite.Group()
-
-        # Load Tilemap data
-        self.tmx_data = load_pygame('scenes/0/0.tmx')
-        # Make the scene
-        self.create_scene()
-
-    # Loads map data and iterates through its layers to build the scene.
-    def create_scene(self):
-        # Get a list of all layer names in the TMX file (e.g., 'blocks', 'ground')
+        self.exit_sprites = pygame.sprite.Group() # Invisible trigger boxes for scene swaps
+        
+        self.player = None
+        
+        self.tmx_data = load_pygame(f'scenes/{self.current_scene}/{self.current_scene}.tmx') # Load Tilemap data
+        self.create_scene() # Make the scene
+        self.transition = Transition(self)
+        
+    def go_to_scene(self):
+        # Create the next scene based on stored navigation data
+        Scene(self.game, self.new_scene, self.entry_point).enter_state()
+        
+    def create_scene(self): 
+        # Loads map data and iterates through its layers to build the scene.
         layers = []
         for layer in self.tmx_data.layers:
             layers.append(layer.name)
-
-        # We loop through every tile in that layer:
+ 
         if 'floors' in layers:
-            # calculate the position (x * TILE_SIZE)
-            # and create a new Object for it.
             for x, y, surf in self.tmx_data.get_layer_by_name('floors').tiles():
                 Object([self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), 'floors', surf)
-
+                
         if 'blocks' in layers:
             for x, y, surf in self.tmx_data.get_layer_by_name('blocks').tiles():
                 Wall([self.block_sprites, self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), 'blocks', surf)
 
-        # If there's an object layer named 'entries'
+        if 'holes' in layers:
+            for x, y, surf in self.tmx_data.get_layer_by_name('holes').tiles():
+                # Add collisions for pit/hole tiles
+                Holes([self.block_sprites, self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), 'holes', surf)
+                
         if "entries" in layers:
-            for obj in self.tmx_data.get_layer_by_name('entries'):  # get the name on this layer (0)
-                if obj.name == '0':
-                    # Create player from this entry point
+            for obj in self.tmx_data.get_layer_by_name('entries'): 
+                if obj.name == self.entry_point:
+                    obj_direction = obj.properties.get('direction', 'right') # Get my custom properties on Tiled
+                    # Spawn player at the correct entry point
                     self.player = Player(self.game, self, [self.update_sprites, self.draw_sprites],
                                          (obj.x, obj.y),
                                          'blocks',
-                                         'player')  # position where the object entry    point is
+                                         'player',
+                                         obj_direction)  
 
-                    # Set the camera offset instantly so it doesn't slide from (0,0)
+                    # Center camera on player immediately
                     self.camera.offset.x = self.player.rect.centerx - SCREEN_WIDTH / 2
                     self.camera.offset.y = self.player.rect.centery - SCREEN_HEIGHT / 2
 
+        if "exits" in layers:
+            for obj in self.tmx_data.get_layer_by_name('exits'):  
+                # Create collision boxes for map exits
+                Collider([self.exit_sprites], (obj.x, obj.y), (obj.width, obj.height), obj.name)
+                
         if "entities" in layers:
-            for obj in self.tmx_data.get_layer_by_name('entities'):  # get the name on this layer (0)
+            for obj in self.tmx_data.get_layer_by_name('entities'):  
+                obj_direction = obj.properties.get('direction', 'right')
                 if obj.name == 'enemy':
-                    # Create player from this entry point
                     self.enemy = GameCharacter(self.game, self, [self.update_sprites, self.draw_sprites],
                                          (obj.x, obj.y),
                                          'blocks',
-                                         'enemy')
+                                         'enemy',
+                                         obj_direction)
+        
         if 'detail 1' in layers:
             for x, y, surf in self.tmx_data.get_layer_by_name('detail 1').tiles():
                 Object([self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), 'detail 1', surf)
-
-    # For ingame debugging visualization (displays accel, vel, etc.)
+    
     def debugger(self, debug_list):
+        # For ingame debugging visualization (displays accel, vel, etc.)
         for index, name in enumerate(debug_list):
             self.game.render_text(name, COLORS['white'], self.game.primary_font, (10, 15 * (index + 1)), False)
 
@@ -112,22 +131,24 @@ class Scene(State):
             self.exit_state()
             self.game.reset_inputs()
 
-        # Update all character logic (player movement, etc.)
-        self.update_sprites.update(dt)
-
-        # figure out where the player moved.
-        self.camera.update(dt, self.player)
-
+        self.update_sprites.update(dt) # Update all character logic (player movement, etc.)
+        if self.player:
+            self.camera.update(dt, self.player) # figure out where the player moved.
+        
+        self.transition.update(dt)
+        
     def draw(self, screen):
         # Instead of drawing sprites normally, we let the CAMERA do it.
         # It takes all our draw_sprites and only draws the ones on screen
         self.camera.draw(screen, self.draw_sprites)
-
+        self.transition.draw(screen)
+        
         #  Draw debug text
         if DEBUG_TEXT:
             self.debugger([
                 str(f'FPS: {round(self.game.clock.get_fps(), 2)}'),
                 str(f'Vel: {round(self.player.vel, 2)}'),
                 str(f'Pos: ({round(self.player.pos.x)}, {round(self.player.pos.y)})'),
-                str(f'State: {self.player.state}')
+                str(f'State: {self.player.state}'),
+                str(f'Mouse Pos: ({round(pygame.mouse.get_pos()[0])}, {round(pygame.mouse.get_pos()[1])})')
             ])

@@ -1,6 +1,14 @@
 import pygame
 from settings import *
 
+class Collider(pygame.sprite.Sprite):
+    # Invisible rectangle used to trigger events like scene changes
+    def __init__(self, groups, pos, size, number):
+        super().__init__(groups)
+        self.image = pygame.Surface((size))
+        self.rect = self.image.get_rect(topleft=pos)
+        self.number = number
+        
 class Object(pygame.sprite.Sprite):
     def __init__(self, groups, pos, z="blocks", surf=pygame.Surface((TILE_SIZE, TILE_SIZE))):
         super().__init__(groups)
@@ -16,5 +24,9 @@ class Object(pygame.sprite.Sprite):
 class Wall(Object):
     def __init__(self, group, pos, z, surf):
         super().__init__(group, pos, z, surf)
-        #self.hitbox = self.rect.copy().inflate(0, -self.rect.height / 2)
+        self.hitbox = self.rect.copy()
+        
+class Holes(Object):
+    def __init__(self, group, pos, z, surf):
+        super().__init__(group, pos, z, surf)
         self.hitbox = self.rect.copy()
