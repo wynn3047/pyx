@@ -6,7 +6,7 @@ TILE_SIZE = 16
 HEAD_FONT = "assets/fonts/alagard.ttf"
 PRIMARY_FONT = "assets/fonts/homespun.ttf"
 
-DEBUG_HITBOXES = True
+DEBUG_HITBOXES = False
 DEBUG_TEXT = True
 
 INPUTS = {
@@ -34,6 +34,50 @@ COLORS = {
     'charcoal_grey': (24, 29, 35),
     'medium_navy': (19,21,32)
 }
+
+HP_CONFIG = {
+    'player_max_hp': 125,
+    'player_hp_regen': 0.2,
+    'player_regen_delay': 9, # Regen delay after hit
+    'invulnerability_duration': 0.67, # For invicibility frames
+    'hit_flash_duration': 0.1,
+    'hit_knockback': 200,
+    'transparency_alpha': 100,
+    'flicker_interval': 0.08,
+    'hp_bar_width': 80,
+    'hp_bar_height': 16,
+    'hp_bar_padding': 10,
+    'hp_text_color': COLORS['white'],
+    'hp_bar_foreground': COLORS['red'],
+    'hp_bar_border': COLORS['white']
+}
+
+DEATH_SEQUENCE_CONFIG = {
+    'slowdown_duration': 0.5,
+    'slowdown_multiplier': 0.2,
+    'bw_filter_duration': 0.8,
+    'pause_duration': 1.2,
+    'fade_color': COLORS['medium_navy'],
+    'message_color': COLORS['red'],
+    'button_color_active': COLORS['green'],
+    'button_color_inactive': COLORS['charcoal_grey']
+}
+
+# Flicker effect during invulnerability
+TRANSPARENCY_FLICKER_CONFIG = {
+    'flicker_alpha_on': 255,           
+    'flicker_alpha_off': 100,          
+    'flicker_interval': 0.08,          
+}
+
+# Death message pool (randomized)
+DEATH_MESSAGES = [
+    "dang...",
+    "ya ded.",
+    "You Died.",
+    "damn"
+]
+
 
 # Layer order top to bottom
 LAYERS = ['background',

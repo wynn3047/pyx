@@ -1,4 +1,5 @@
 import pygame
+import random
 from settings import *
 from camera import Camera
 from transition import Transition
@@ -64,10 +65,27 @@ class Scene(State):
         self.create_scene() # Make the scene
         self.transition = Transition(self)
         
+        # Death sequence
+        self.is_dead = False
+        self.death_phase = None # slowdown-> blacken-> pause
+        self.death_timer = 0
+        self.death_message = None
+        self.death_slowdown_dt = 1.0 # Multiplier for dt during slowmo
+        
+        # Buttons for death sequence
+        self.restart_button_rect = None
+        self.exit_button_rect = None
+        
     def go_to_scene(self):
         # Create the next scene based on stored navigation data
+        self.game.player_data = self.player.save_data() # Save before entering
+        if hasattr(self, 'enemy') and self.enemy: # Save enemy data
+            self.game.enemy_data = self.enemy.save_data()
+        else:
+            self.game.enemy_data = None
+            
         Scene(self.game, self.new_scene, self.entry_point).enter_state()
-        
+    
     def create_scene(self): 
         # Loads map data and iterates through its layers to build the scene.
         layers = []
@@ -97,6 +115,8 @@ class Scene(State):
                                          'blocks',
                                          'player',
                                          obj_direction)  
+                    if hasattr(self.game, 'player_data'):
+                        self.player.load_data(self.game.player_data)
 
                     # Center camera on player immediately
                     self.camera.offset.x = self.player.rect.centerx - SCREEN_WIDTH / 2
@@ -108,29 +128,37 @@ class Scene(State):
                 Collider([self.exit_sprites], (obj.x, obj.y), (obj.width, obj.height), obj.name)
                 
         if "entities" in layers:
+            from enemy import Enemy
             for obj in self.tmx_data.get_layer_by_name('entities'):  
                 obj_direction = obj.properties.get('direction', 'right')
                 if obj.name == 'enemy':
-                    self.enemy = GameCharacter(self.game, self, [self.update_sprites, self.draw_sprites],
+                    self.enemy = Enemy(self.game, self, [self.update_sprites, self.draw_sprites],
                                          (obj.x, obj.y),
                                          'blocks',
                                          'enemy',
                                          obj_direction)
-        
+                    if hasattr(self.game, 'enemy_data') and self.game.enemy_data:
+                        self.enemy.load_data(self.game.enemy_data)
+
         if 'detail 1' in layers:
             for x, y, surf in self.tmx_data.get_layer_by_name('detail 1').tiles():
-                Object([self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), 'detail 1', surf)
+                Object([self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), 'detail 1', surf) 
     
+    def start_death_sequence(self):
+        if self.is_dead:
+            return 
+        
+        self.is_dead = True
+        self.death_phase = 'slowdown'
+        self.death_timer = DEATH_SEQUENCE_CONFIG['slowdown_duration']
+        self.death_message = random.choice(DEATH_MESSAGES)
+        
     def debugger(self, debug_list):
         # For ingame debugging visualization (displays accel, vel, etc.)
         for index, name in enumerate(debug_list):
             self.game.render_text(name, COLORS['white'], self.game.primary_font, (10, 15 * (index + 1)), False)
 
     def update(self, dt):
-        if INPUTS['backspace']:
-            self.exit_state()
-            self.game.reset_inputs()
-
         self.update_sprites.update(dt) # Update all character logic (player movement, etc.)
         if self.player:
             self.camera.update(dt, self.player) # figure out where the player moved.
@@ -143,14 +171,26 @@ class Scene(State):
         self.camera.draw(screen, self.draw_sprites)
         self.transition.draw(screen)
         
+        if self.is_dead:
+            if self.death_phase == 'bw_filter':
+                self._draw_bw_filter(screen, self.bw_intensity)
+            
+            elif self.death_phase == 'pause':
+                self._draw_death_screen(screen)
+                
         #  Draw debug text
         if DEBUG_TEXT:
             self.debugger([
                 str(f'FPS: {round(self.game.clock.get_fps(), 2)}'),
                 str(f'Vel: {round(self.player.vel, 2)}'),
-                str(f'Pos: ({round(self.player.pos.x)}, {round(self.player.pos.y)})'),
                 str(f'State: {self.player.state}'),
-                str(f'Mouse Pos: ({round(pygame.mouse.get_pos()[0])}, {round(pygame.mouse.get_pos()[1])})'),
                 str(f'Tumble Charge: {self.player.tumble_charges}'),
-                str(f'Tumble CD: {round(self.player.tumble_cooldown_timer, 1)}')
+                str(f'Tumble CD: {round(self.player.tumble_cooldown_timer, 1)}'),
+                str(f'HP: {round(self.player.hp, 1)}'),
+                str(f'I-frame: {round(self.player.invulnerability_timer, 2)}'),
+                str(f'HP delay: {round(self.player.regen_delay_timer, 1)}'),
+                str(f'Death Msg: {self.death_message}'),
+                str(f'Death Phase: {self.death_phase}')
             ])
+                
+    

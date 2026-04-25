@@ -25,6 +25,8 @@ class Game:
         self.splash_screen = SplashScreen(self)
         self.states.append(self.splash_screen)
 
+        self.player_data = {}
+        self.enemy_data = {}
     # Pygame events
     def get_inputs(self):
         for event in pygame.event.get():

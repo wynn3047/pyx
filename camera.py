@@ -50,7 +50,30 @@ class Camera(pygame.sprite.Group):
         # We move our "visible window" to match where the camera is looking.
         self.visible_window.x = math.floor(self.offset.x)
         self.visible_window.y = math.floor(self.offset.y)
+    
+    def apply_hit_effects(self, sprite, image):
+        # Red flash & transparent flicker
+        image = image.copy()
 
+        if hasattr(sprite, 'hit_flash_timer') and sprite.hit_flash_timer > 0:
+            # Create red overlay
+            red_surf = pygame.Surface(image.get_size())
+            red_surf.fill(COLORS['red'])
+            red_surf.set_alpha(128)
+
+            # Apply as mask only where pixels exist
+            image.blit(red_surf, (0, 0), special_flags=pygame.BLEND_MULT)
+            return image
+        
+        if hasattr(sprite, 'invulnerable') and sprite.invulnerable and hasattr(sprite, 'transparent_flicker_timer'):
+            flicker_cycle = sprite.transparent_flicker_timer % (TRANSPARENCY_FLICKER_CONFIG['flicker_interval'] * 2)
+            if flicker_cycle < TRANSPARENCY_FLICKER_CONFIG['flicker_interval']:
+                image.set_alpha(TRANSPARENCY_FLICKER_CONFIG['flicker_alpha_on']) 
+            else:
+                image.set_alpha(TRANSPARENCY_FLICKER_CONFIG['flicker_alpha_off'])
+        
+        return image
+    
     def show_hitbox(self, screen, sprite, offset):
         # Visual hitbox
         from player import Player
@@ -96,7 +119,8 @@ class Camera(pygame.sprite.Group):
                         shadow_y = offset_pos[1] + sprite.rect.height - sprite.shadow_offset_y
                         screen.blit(sprite.shadow_surf, (shadow_x, shadow_y))
 
-                    screen.blit(sprite.image, offset_pos) # Put the image on the screen at that shifted position.
+                    sprite_image = self.apply_hit_effects(sprite, sprite.image)
+                    screen.blit(sprite_image, offset_pos) # Put the image on the screen at that shifted position.
 
                     if DEBUG_HITBOXES:
                         self.show_hitbox(screen, sprite, draw_offset)

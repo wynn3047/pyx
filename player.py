@@ -13,20 +13,77 @@ class Player(GameCharacter):
         # Tumble cooldown and usage
         self.tumble_charges = 2
         self.tumble_max_charges = 2
-        self.tumble_cooldown = 1.7
+        self.tumble_cooldown = 1.3
         self.tumble_cooldown_timer = 0
+        self.tumble_speed = 400
+        # Player HP & Invincibility
+        self.hp = HP_CONFIG['player_max_hp']
+        self.max_hp = HP_CONFIG['player_max_hp']
         
-    def movement(self):
-        # X inputs
-        if INPUTS['left']: self.accel.x = -self.force
-        elif INPUTS['right']: self.accel.x = self.force
-        else:
-            self.accel.x = 0
+        self.invulnerable = False 
+        self.invulnerability_timer = 0 # I-Frame timer
+        
+        self.hit_flash_timer = 0 # Red overlay hit duration
+        self.transparent_flicker_timer = 0 # Flicker duration
+        
+        self.regen_delay_timer = 0 # Cooldown after taking  dmg
+        self.hp_regen = HP_CONFIG['player_hp_regen']
+        
+    def take_damage(self, amount, knockback_dir=None, knockback_stun=0.25):
+        if self.invulnerable: 
+            return # Don't take damage
+        
+        self.hp = max(0, self.hp - amount)
+        
+        self.invulnerable = True
+        self.invulnerability_timer = HP_CONFIG['invulnerability_duration']
 
-        # Y inputs
-        if INPUTS['up']: self.accel.y = -self.force
-        elif INPUTS['down']: self.accel.y = self.force
-        else: self.accel.y = 0
+        self.hit_flash_timer = HP_CONFIG['hit_flash_duration'] # Red flash
+        self.transparent_flicker_timer = HP_CONFIG['invulnerability_duration'] # Flicker transparency
+        
+        self.regen_delay_timer = HP_CONFIG['player_regen_delay'] 
+            
+        # Knockback effect
+        self.knockback_speed = HP_CONFIG['hit_knockback']
+        self.knockback_timer = knockback_stun # Short stun duration
+        
+        if knockback_dir is None:
+            knockback_dir = vect(1, 0)
+        
+        if knockback_dir.length() > 0:
+            knockback_dir.normalize_ip()
+        
+        self.vel += knockback_dir * self.knockback_speed 
+
+    def update_regen(self, dt):
+        # Passive HP regen during only Idle/Run states
+        if not isinstance(self.state, (Idle, Run)):
+            return # exit
+        
+        # Cooldown after dmg
+        if self.regen_delay_timer > 0:
+            if isinstance(self.state, Idle): # Decrease regen delay when idling
+                self.regen_delay_timer -= 0.2 * dt
+            self.regen_delay_timer = max(0, self.regen_delay_timer -dt)
+            return # exit early if cooling down
+            
+        # Heal
+        if self.hp < self.max_hp:
+            if isinstance(self.state, Idle):
+                self.hp_regen += 0.2
+            self.hp = min(self.max_hp, self.hp + self.hp_regen * dt)
+            
+    def movement(self):
+        if self.knockback_timer > 0:
+            self.move_direction = vect(0, 0)
+        else:
+            # X inputs
+            x = int(INPUTS['right']) - int(INPUTS['left'])
+            y = int(INPUTS['down']) - int(INPUTS['up'])
+            self.move_direction = vect(x, y)
+            if self.move_direction.length() > 1:
+                self.move_direction.normalize_ip()
+        super().movement()
 
     def vect_to_mouse(self, speed):
         # Dash to mouse pointer
@@ -42,12 +99,29 @@ class Player(GameCharacter):
                 self.scene.new_scene = SCENE_DATA[int(self.scene.current_scene)][int(exit.number)]
                 self.scene.entry_point = exit.number # ID of the door to spawn at in the next scene
                 self.scene.transition.exiting = True # Start the visual fade out
-                
+
+    def save_data(self):
+          # Return player data
+          return {
+            'hp': self.hp,
+            'tumble_charges': self.tumble_charges,
+            'tumble_cooldown_timer': self.tumble_cooldown_timer,
+            'regen_delay_timer': self.regen_delay_timer
+        }
+    
+    def load_data(self, data):
+        # Restore player data
+        if not data:
+            return
+        
+        self.hp = data.get('hp', self.max_hp) 
+        self.tumble_charges = data.get('tumble_charges', self.tumble_charges)
+        self.tumble_cooldown_timer = data.get('tumble_cooldown_timer', self.tumble_cooldown_timer)
+        self.regen_delay_timer = data.get('regen_delay_timer', self.regen_delay_timer)
+
     def update(self, dt):
-        self.get_direction()
+        super().update(dt)
         self.exit_scene()
-        self.change_state()
-        self.state.update(dt, self)  
         
         # Recharge tumble during Run/Idle not on Tumble
         if self.tumble_charges < self.tumble_max_charges and not isinstance(self.state, Tumble):
@@ -56,6 +130,27 @@ class Player(GameCharacter):
                 self.tumble_charges += 1
                 self.tumble_cooldown_timer = self.tumble_cooldown
         
+        # HP & I-frame timers
+        self.update_regen(dt)
+        
+        if self.invulnerable:
+            self.invulnerability_timer -= dt
+            if self.invulnerability_timer <= 0:
+                self.invulnerable = False # Can take dmg again
+                self.invulnerability_timer = 0
+        
+        if self.hit_flash_timer > 0:
+            self.hit_flash_timer -= dt # Red flash fades
+            
+        if self.transparent_flicker_timer > 0:
+            self.transparent_flicker_timer -= dt # Flicker fades
+        
+        if self.hp <= 0:
+            self.scene.start_death_sequence() # # Trigger death seq
+        
+        if INPUTS['backspace']:
+            self.take_damage(10)
+            
 class Idle:     
     def __init__(self, player):
         player.frame_index = 0 # Reset frame index
@@ -100,7 +195,7 @@ class Tumble:
         INPUTS['space'] = False
         self.timer = 0.45 # Animation timer
         self.dash_pending = False # Input buffer
-        self.vel = player.vect_to_mouse(300) 
+        self.vel = player.vect_to_mouse(player.tumble_speed) 
         player.tumble_charges -= 1 # Consume a charge
         player.tumble_cooldown_timer = player.tumble_cooldown
         

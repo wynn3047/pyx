@@ -15,7 +15,8 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         self.accel = vect()
         self.vel = vect()
         self.frict = -15
-
+        self.move_direction = vect()
+        
         # Load images
         self.import_images(f'assets/characters/{self.name}/')  # calls the char's dir path
         self.frame_index = 0  # frame number
@@ -35,6 +36,7 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         self.pos = vect(self.rect.center) # Character precise coordinates
         self.last_direction = direction
         self.state = Idle(self)
+        self.knockback_timer = 0
 
         # Circle/Ellpise shadow 
         shadow_width = int(self.rect.width * SHADOW_CONFIG['width_scale'])
@@ -72,8 +74,6 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
 
     def get_direction(self):
         # For all angles
-        # angle = self.vel.angle_to(vect(0, 1))
-        # angle = (angle + 360) % 360
         DEAD_ZONE = 0.1 # Tiny threshold to prevent float noise
         # Check actual horizontal velocity
         if self.vel.x > DEAD_ZONE:
@@ -87,14 +87,8 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
             return self.last_direction
 
     def movement(self):
-        if self.vel.magnitude() > 1: # Only goes when it moves
-            if self.last_direction == 'left': self.accel.x = -self.force
-            elif self.last_direction == 'right': self.accel.x = self.force
-            else: self.accel.x = 0
-
-            if self.last_direction == 'up': self.accel.y = -self.force
-            elif self.last_direction == 'down': self.accel.y = self.force
-            else: self.accel.y = 0
+        self.accel.x = self.move_direction.x * self.force
+        self.accel.y = self.move_direction.y * self.force
 
     def get_collides(self, group):
         collidable_lists = pygame.sprite.spritecollide(self, group, False)
@@ -117,6 +111,7 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         # Sync the visual rect to the physical hitbox
         self.rect.center = self.hitbox.center
 
+    
     # Motions & Equations
     def physics(self, dt, frict):
         # Optimization: Get potential collisions once per frame
@@ -136,9 +131,10 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         self.hitbox.centery = self.pos.y
         self.collisions('y', collidable_sprites)
 
-        # Fix diagonal speed boost
-        if self.vel.magnitude() >= self.speed:  # magnitude() gets the speed of vel.x and vel.y
-            self.vel = self.vel.normalize() * self.speed  # normalize() sets magnitude to 1.0 instead of going 40% (1.4) faster
+        # Fix diagonal speed boost (only if not being knocked back)
+        if self.knockback_timer <= 0:
+            if self.vel.magnitude() >= self.speed:  # magnitude() gets the speed of vel.x and vel.y
+                self.vel = self.vel.normalize() * self.speed  # normalize() sets magnitude to 1.0 instead of going 40% (1.4) faster
 
         # Keep hitboxes synced
         self.rect.center = self.pos
@@ -150,10 +146,12 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         else: self.state
 
     def update(self, dt):
+        if self.knockback_timer > 0:
+            self.knockback_timer -= dt
+            
         self.get_direction()
         self.change_state()
         self.state.update(dt, self)
-
 
 class Idle:
     def __init__(self, character):
@@ -167,6 +165,7 @@ class Idle:
             return Run(character)
 
     def update(self, dt, character):
+        character.move_direction = vect(0, 0)
         character.animate(f'idle-{character.get_direction()}', 10 * dt)
         character.movement()
         character.physics(dt, character.frict)
