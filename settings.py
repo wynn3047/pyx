@@ -28,30 +28,32 @@ INPUTS = {
 COLORS = {
     'black' : (0, 0, 0),
     'white' : (255, 255, 255),
-    'red' : (255, 0, 0),
+    'red' : (136, 0, 21),
     'green' : (0, 255, 0), 
     'blue' : (69,78,99),
     'charcoal_grey': (24, 29, 35),
-    'medium_navy': (19,21,32)
+    'medium_navy': (19,21,32),
+    
 }
 
 HP_CONFIG = {
-    'player_max_hp': 125,
-    'player_hp_regen': 0.2,
-    'player_regen_delay': 9, # Regen delay after hit
+    'player_max_hp': 150,
+    'player_hp_regen': 6,
+    'player_regen_delay': 7, # Regen delay after hit
     'invulnerability_duration': 0.67, # For invicibility frames
     'hit_flash_duration': 0.1,
     'hit_knockback': 200,
     'transparency_alpha': 100,
-    'flicker_interval': 0.08,
-    'hp_bar_width': 80,
-    'hp_bar_height': 16,
-    'hp_bar_padding': 10,
-    'hp_text_color': COLORS['white'],
-    'hp_bar_foreground': COLORS['red'],
-    'hp_bar_border': COLORS['white']
+    'flicker_interval': 0.08,     
 }
 
+HEART_CONFIG = {            
+    'hp_per_heart': 50,                 
+    'heart_size': 16,             
+    'heart_spacing': 2,                      
+    'ui_offset_x': 10,            
+    'ui_offset_y': 10,            
+}
 DEATH_SEQUENCE_CONFIG = {
     'slowdown_duration': 0.5,
     'slowdown_multiplier': 0.2,

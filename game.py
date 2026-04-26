@@ -146,6 +146,8 @@ class Game:
     def loop(self):
         while self.running:
             dt = self.clock.tick(self.fps) / 1000.0
+            # Cap dt to prevent teleporting and physics glitches at low FPS
+            dt = min(dt, 0.1) 
             self.get_inputs()
             # Always run the top of the state stack
             self.states[-1].update(dt)

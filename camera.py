@@ -54,12 +54,19 @@ class Camera(pygame.sprite.Group):
     def apply_hit_effects(self, sprite, image):
         # Red flash & transparent flicker
         image = image.copy()
+        
+        # Check if this is the player and they are at low HP
+        from player import Player
+        is_player_low_hp = isinstance(sprite, Player) and sprite.is_low_hp
 
         if hasattr(sprite, 'hit_flash_timer') and sprite.hit_flash_timer > 0:
             # Create red overlay
             red_surf = pygame.Surface(image.get_size())
             red_surf.fill(COLORS['red'])
-            red_surf.set_alpha(128)
+            
+            # Normal hit flash is 128 alpha, but if low hp we might want it more intense
+            alpha = 180 if is_player_low_hp else 128
+            red_surf.set_alpha(alpha)
 
             # Apply as mask only where pixels exist
             image.blit(red_surf, (0, 0), special_flags=pygame.BLEND_MULT)
@@ -74,6 +81,50 @@ class Camera(pygame.sprite.Group):
         
         return image
     
+    def draw_hearts(self, screen, scene):
+        if not scene.player or not hasattr(scene, 'heart_sprite'):
+            return
+
+        player = scene.player
+        heart_ratios = player.get_heart_states()
+
+        heart_size = HEART_CONFIG['heart_size']
+        spacing = HEART_CONFIG['heart_spacing']
+
+        total_width = (len(heart_ratios) * heart_size) + ((len(heart_ratios) - 1) * spacing)
+        start_x = SCREEN_WIDTH - total_width - HEART_CONFIG['ui_offset_x']
+        start_y = HEART_CONFIG['ui_offset_y']
+
+        for heart_index, ratio in enumerate(heart_ratios):
+            x = start_x + (heart_index * (heart_size + spacing))
+            y = start_y
+
+            # Always draw the full-sized black background heart
+            if hasattr(scene, 'black_heart_sprite'):
+                screen.blit(scene.black_heart_sprite, (x, y))
+
+            #  Draw the scaled red heart on top
+            if ratio > 0:
+                if ratio >= 1:
+                    screen.blit(scene.heart_sprite, (x, y))
+                else:
+                    # Dynamic scaling centered in the 16x16 slot
+                    scaled_w = int(heart_size * ratio)
+                    scaled_h = int(heart_size * ratio)
+
+                    if scaled_w > 0 and scaled_h > 0:
+                        scaled_heart = pygame.transform.scale(scene.heart_sprite, (scaled_w, scaled_h))
+
+                        # Gradual Darkening: Multiply color by ratio (255 = full bright, 0 = black)
+                        brightness = int(255 * ratio)
+                        scaled_heart.fill((brightness, brightness, brightness), special_flags=pygame.BLEND_RGB_MULT)
+
+                        # Calculate centered position
+                        offset_x = (heart_size - scaled_w) // 2
+                        offset_y = (heart_size - scaled_h) // 2
+                        screen.blit(scaled_heart, (x + offset_x, y + offset_y))
+
+
     def show_hitbox(self, screen, sprite, offset):
         # Visual hitbox
         from player import Player
@@ -99,7 +150,7 @@ class Camera(pygame.sprite.Group):
             temp_combat.topleft -= offset
             pygame.draw.rect(screen, combat_color, temp_combat, 1)
             
-    def draw(self, screen, group):
+    def draw(self, screen, group, scene):
         screen.fill((COLORS['medium_navy']))
         draw_offset = vect(math.floor(self.offset.x), math.floor(self.offset.y))
         # Sort by the bottom of the rect (the feet) for depth
@@ -124,3 +175,12 @@ class Camera(pygame.sprite.Group):
 
                     if DEBUG_HITBOXES:
                         self.show_hitbox(screen, sprite, draw_offset)
+        
+        self.draw_hearts(screen, scene)
+
+        # Full-screen red flash if player is hit while at low HP (<= 50%)
+        if scene.player and scene.player.is_low_hp and scene.player.hit_flash_timer > 0:
+            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            overlay.fill(COLORS['red'])
+            overlay.set_alpha(70) # 0-255 opacity
+            screen.blit(overlay, (0, 0))

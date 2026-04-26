@@ -76,6 +76,12 @@ class Scene(State):
         self.restart_button_rect = None
         self.exit_button_rect = None
         
+        # Load heart sprite
+        self.heart_sprite = pygame.image.load('assets/ui/heart.png').convert_alpha()
+        # Pre-render black heart for background
+        self.black_heart_sprite = self.heart_sprite.copy()
+        self.black_heart_sprite.fill((0, 0, 0), special_flags=pygame.BLEND_RGB_MULT)
+
     def go_to_scene(self):
         # Create the next scene based on stored navigation data
         self.game.player_data = self.player.save_data() # Save before entering
@@ -104,7 +110,7 @@ class Scene(State):
             for x, y, surf in self.tmx_data.get_layer_by_name('holes').tiles():
                 # Add collisions for pit/hole tiles
                 Holes([self.block_sprites, self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), 'holes', surf)
-                
+
         if "entries" in layers:
             for obj in self.tmx_data.get_layer_by_name('entries'): 
                 if obj.name == self.entry_point:
@@ -168,7 +174,7 @@ class Scene(State):
     def draw(self, screen):
         # Instead of drawing sprites normally, we let the CAMERA do it.
         # It takes all our draw_sprites and only draws the ones on screen
-        self.camera.draw(screen, self.draw_sprites)
+        self.camera.draw(screen, self.draw_sprites, self)
         self.transition.draw(screen)
         
         if self.is_dead:

@@ -29,6 +29,10 @@ class Player(GameCharacter):
         self.regen_delay_timer = 0 # Cooldown after taking  dmg
         self.hp_regen = HP_CONFIG['player_hp_regen']
         
+    @property
+    def is_low_hp(self):
+        return self.hp <= (self.max_hp / 2)
+
     def take_damage(self, amount, knockback_dir=None, knockback_stun=0.25):
         if self.invulnerable: 
             return # Don't take damage
@@ -63,15 +67,30 @@ class Player(GameCharacter):
         # Cooldown after dmg
         if self.regen_delay_timer > 0:
             if isinstance(self.state, Idle): # Decrease regen delay when idling
-                self.regen_delay_timer -= 0.2 * dt
-            self.regen_delay_timer = max(0, self.regen_delay_timer -dt)
+                self.regen_delay_timer = max(0, self.regen_delay_timer - dt)
+            self.regen_delay_timer = max(0, self.regen_delay_timer - dt)
             return # exit early if cooling down
             
         # Heal
         if self.hp < self.max_hp:
             if isinstance(self.state, Idle):
-                self.hp_regen += 0.2
+                self.hp = min(self.max_hp, self.hp + (self.hp_regen + 0.2) * dt)
             self.hp = min(self.max_hp, self.hp + self.hp_regen * dt)
+    
+    def get_heart_states(self):
+        # Returns the HP ratio (0.0 to 1.0) for each heart
+        ratios = []
+        max_hearts = int(self.max_hp / HEART_CONFIG['hp_per_heart'])
+        hp_per_heart = HEART_CONFIG['hp_per_heart']
+        
+        for heart_index in range(max_hearts):
+            heart_start_hp = heart_index * hp_per_heart
+            hp_in_heart = max(0, min(self.hp - heart_start_hp, hp_per_heart))
+            ratio = hp_in_heart / hp_per_heart
+            ratios.append(ratio)
+        
+        return ratios
+            
             
     def movement(self):
         if self.knockback_timer > 0:
@@ -118,6 +137,10 @@ class Player(GameCharacter):
         self.tumble_charges = data.get('tumble_charges', self.tumble_charges)
         self.tumble_cooldown_timer = data.get('tumble_cooldown_timer', self.tumble_cooldown_timer)
         self.regen_delay_timer = data.get('regen_delay_timer', self.regen_delay_timer)
+
+    @property
+    def is_low_hp(self):
+        return self.hp <= self.max_hp / 2
 
     def update(self, dt):
         super().update(dt)

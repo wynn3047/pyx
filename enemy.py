@@ -10,13 +10,11 @@ class Enemy(GameCharacter):
     def __init__(self, game, scene, groups, pos, z, name, direction='right'):
         super().__init__(game, scene, groups, pos, z, name, direction)
 
-        # Movement & Stats
-        self.speed = 40
         self.detection_radius = 150
         self.is_chasing = False
         
         # Combat
-        self.contact_damage = 5
+        self.contact_damage = random.randint(25, 40)
         self.contact_cooldown = 1
         self.contact_cooldown_timer = 0
         
@@ -27,7 +25,7 @@ class Enemy(GameCharacter):
         # Wandering logic
         self.wander_waypoint = None
         self.wander_waypoint_radius = 40
-        self.idle_duration = 2 
+        self.idle_duration = random.uniform(2, 4)
         self.idle_timer = 0
         
         self.spawn_pos = vect(pos)
@@ -154,7 +152,7 @@ class Enemy(GameCharacter):
         self.physics(dt, -3)
 
 class EnemyIdle:
-    """State when enemy is standing still."""
+    # State when enemy is standing still
     def __init__(self, enemy):
         enemy.frame_index = 0
         enemy.idle_timer = enemy.idle_duration
@@ -178,10 +176,11 @@ class EnemyIdle:
 
 
 class Wander:
-    """State when enemy is moving towards a random waypoint."""
+    # State when enemy is moving towards a random waypoint
     def __init__(self, enemy):
         enemy.frame_index = 0
         enemy.stuck_timer = 0
+        enemy.speed = 5
         
     def __str__(self):
         return "Wander"
@@ -196,7 +195,7 @@ class Wander:
         direction = enemy.wander_waypoint - enemy.pos
         
         # Return to idle if we reached the destination
-        if direction.length() < 10:
+        if direction.length() < 20: # 20 px threshold
             enemy.vel = vect(0, 0)
             return EnemyIdle(enemy)
         
@@ -218,6 +217,7 @@ class Chase:
     def __init__(self, enemy):
         enemy.frame_index = 0
         enemy.is_chasing = True
+        enemy.speed = 45
         
     def __str__(self):
         return "Chase"
