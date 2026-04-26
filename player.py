@@ -9,13 +9,14 @@ class Player(GameCharacter):
         self.combat_hitbox = self.rect.copy().inflate(-5, -1) # Custom for combat hitbox
         self.combat_hitbox.center = self.rect.center
         self.state = Idle(self)
-
+        self.speed = 80
+        
         # Tumble cooldown and usage
         self.tumble_charges = 2
         self.tumble_max_charges = 2
-        self.tumble_cooldown = 1.3
+        self.tumble_cooldown = 1.1
         self.tumble_cooldown_timer = 0
-        self.tumble_speed = 400
+        self.tumble_speed = 450
         # Player HP & Invincibility
         self.hp = HP_CONFIG['player_max_hp']
         self.max_hp = HP_CONFIG['player_max_hp']

@@ -131,6 +131,33 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         self.hitbox.centery = self.pos.y
         self.collisions('y', collidable_sprites)
 
+        # MAP BOUNDARIES: Clamp hitbox within the map dimensions
+        map_w, map_h = self.scene.camera.scene_size
+        
+        # Allow player a small bleed to hit exit triggers at map edges
+        from player import Player
+        margin = 8 if isinstance(self, Player) else 0
+        
+        # X Boundaries
+        if self.hitbox.left < -margin:
+            self.hitbox.left = -margin
+            self.pos.x = self.hitbox.centerx
+            self.vel.x = 0
+        elif self.hitbox.right > map_w + margin:
+            self.hitbox.right = map_w + margin
+            self.pos.x = self.hitbox.centerx
+            self.vel.x = 0
+            
+        # Y Boundaries
+        if self.hitbox.top < -margin:
+            self.hitbox.top = -margin
+            self.pos.y = self.hitbox.centery
+            self.vel.y = 0
+        elif self.hitbox.bottom > map_h + margin:
+            self.hitbox.bottom = map_h + margin
+            self.pos.y = self.hitbox.centery
+            self.vel.y = 0
+
         # Fix diagonal speed boost (only if not being knocked back)
         if self.knockback_timer <= 0:
             if self.vel.magnitude() >= self.speed:  # magnitude() gets the speed of vel.x and vel.y

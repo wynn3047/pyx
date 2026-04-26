@@ -26,7 +26,7 @@ class Game:
         self.states.append(self.splash_screen)
 
         self.player_data = {}
-        self.enemy_data = {}
+        self.scene_states = {} # Stores persistent data for each room/scene
     # Pygame events
     def get_inputs(self):
         for event in pygame.event.get():

@@ -3,7 +3,6 @@ import random
 from settings import *
 from camera import Camera
 from transition import Transition
-from characters import GameCharacter
 from player import Player
 from objects import Collider,Object, Wall, Holes
 from pytmx.util_pygame import load_pygame
@@ -48,8 +47,8 @@ class Scene(State):
         super().__init__(game)
         
         # Scene switching 
-        self.current_scene = current_scene # Folder name of the map
-        self.entry_point = entry_point # Door or spawn point ID
+        self.current_scene = current_scene 
+        self.entry_point = entry_point 
         
         self.camera = Camera(self)
         
@@ -57,7 +56,8 @@ class Scene(State):
         self.update_sprites = pygame.sprite.Group()
         self.draw_sprites = pygame.sprite.Group()
         self.block_sprites = pygame.sprite.Group()
-        self.exit_sprites = pygame.sprite.Group() # Invisible trigger boxes for scene swaps
+        self.enemy_sprites = pygame.sprite.Group() 
+        self.exit_sprites = pygame.sprite.Group() 
         
         self.player = None
         
@@ -85,10 +85,14 @@ class Scene(State):
     def go_to_scene(self):
         # Create the next scene based on stored navigation data
         self.game.player_data = self.player.save_data() # Save before entering
-        if hasattr(self, 'enemy') and self.enemy: # Save enemy data
-            self.game.enemy_data = self.enemy.save_data()
-        else:
-            self.game.enemy_data = None
+        
+        # LOCAL PERSISTENCE: Save all enemies in this scene with a timestamp
+        if self.enemy_sprites:
+            enemy_states = [enemy.save_data() for enemy in self.enemy_sprites]
+            self.game.scene_states[self.current_scene] = {
+                'enemies': enemy_states,
+                'time': pygame.time.get_ticks()
+            }
             
         Scene(self.game, self.new_scene, self.entry_point).enter_state()
     
@@ -132,19 +136,82 @@ class Scene(State):
             for obj in self.tmx_data.get_layer_by_name('exits'):  
                 # Create collision boxes for map exits
                 Collider([self.exit_sprites], (obj.x, obj.y), (obj.width, obj.height), obj.name)
-                
+
         if "entities" in layers:
             from enemy import Enemy
             for obj in self.tmx_data.get_layer_by_name('entities'):  
                 obj_direction = obj.properties.get('direction', 'right')
                 if obj.name == 'enemy':
-                    self.enemy = Enemy(self.game, self, [self.update_sprites, self.draw_sprites],
+                    Enemy(self.game, self, [self.update_sprites, self.draw_sprites, self.enemy_sprites],
                                          (obj.x, obj.y),
                                          'blocks',
                                          'enemy',
                                          obj_direction)
-                    if hasattr(self.game, 'enemy_data') and self.game.enemy_data:
-                        self.enemy.load_data(self.game.enemy_data)
+        
+        # Randomly spawn enemies within Tiled shapes (i'll be using rectangle)
+        if "spawners" in layers:
+            from enemy import Enemy
+            for obj in self.tmx_data.get_layer_by_name('spawners'):
+                count = obj.properties.get('count', 1)
+                enemy_type = obj.properties.get('enemy_type', 'enemy')
+                
+                for i in range(count):
+                    spawned = False
+                    attempts = 0
+                    while not spawned and attempts < 15: # Safety break to avoid infinite loops
+                        attempts += 1
+                        # Pick random point in shape
+                        rx = random.uniform(obj.x, obj.x + obj.width)
+                        ry = random.uniform(obj.y, obj.y + obj.height)
+                        # Validate position (not in wall AND not on top of another enemy)
+                        # A 24x24 buffer for 8 px gap
+                        buffer_rect = pygame.Rect(0, 0, 24, 24) 
+                        buffer_rect.center = (rx, ry)
+
+                        is_blocked = False
+                        # Check Walls
+                        for block in self.block_sprites:
+                            if buffer_rect.colliderect(block.hitbox):
+                                is_blocked = True
+                                break
+
+                        # Check other enemies already in the scene
+                        if not is_blocked:
+                            for enemy in self.enemy_sprites:
+                                if buffer_rect.colliderect(enemy.hitbox):
+                                    is_blocked = True
+                                    break
+
+                        if not is_blocked:
+                            Enemy(self.game, self, [self.update_sprites, self.draw_sprites, self.enemy_sprites],
+                                  (rx, ry), 'blocks', enemy_type)
+                            spawned = True
+
+
+        # Re-apply saved states to the group of enemies
+        saved_data = self.game.scene_states.get(self.current_scene)
+        if saved_data:
+            # Match saved data to current enemies
+            for e in self.enemy_sprites: e.kill()
+            from enemy import Enemy
+            
+            saved_enemies = saved_data['enemies']
+            saved_time = saved_data['time']
+            current_time = pygame.time.get_ticks()
+
+            # If player has been gone for more than 15 seconds, enemies return to spawn
+            reset_to_spawn = (current_time - saved_time) > 15000 
+            
+            for state in saved_enemies:
+                # Decide position based on timer
+                pos = state['spawn_pos'] if reset_to_spawn else state['pos']
+                
+                e = Enemy(self.game, self, [self.update_sprites, self.draw_sprites, self.enemy_sprites],
+                          pos, 'blocks', 'enemy')
+                
+                # If we aren't resetting to spawn, load full state (HP, Chasing, etc.)
+                if not reset_to_spawn:
+                    e.load_data(state)
 
         if 'detail 1' in layers:
             for x, y, surf in self.tmx_data.get_layer_by_name('detail 1').tiles():
@@ -176,13 +243,6 @@ class Scene(State):
         # It takes all our draw_sprites and only draws the ones on screen
         self.camera.draw(screen, self.draw_sprites, self)
         self.transition.draw(screen)
-        
-        if self.is_dead:
-            if self.death_phase == 'bw_filter':
-                self._draw_bw_filter(screen, self.bw_intensity)
-            
-            elif self.death_phase == 'pause':
-                self._draw_death_screen(screen)
                 
         #  Draw debug text
         if DEBUG_TEXT:
@@ -196,7 +256,8 @@ class Scene(State):
                 str(f'I-frame: {round(self.player.invulnerability_timer, 2)}'),
                 str(f'HP delay: {round(self.player.regen_delay_timer, 1)}'),
                 str(f'Death Msg: {self.death_message}'),
-                str(f'Death Phase: {self.death_phase}')
+                str(f'Death Phase: {self.death_phase}'),
+                str(f'Time: {round(pygame.time.get_ticks() / 1000, 1)}')
             ])
                 
     

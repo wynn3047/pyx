@@ -64,7 +64,7 @@ class Camera(pygame.sprite.Group):
             red_surf = pygame.Surface(image.get_size())
             red_surf.fill(COLORS['red'])
             
-            # Normal hit flash is 128 alpha, but if low hp we might want it more intense
+            # Normal hit flash is 128 alpha, but if low hp more intense
             alpha = 180 if is_player_low_hp else 128
             red_surf.set_alpha(alpha)
 

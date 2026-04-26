@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="16" height="24" tilewidth="16" tileheight="16" infinite="0" nextlayerid="8" nextobjectid="5">
+<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="16" height="24" tilewidth="16" tileheight="16" infinite="0" nextlayerid="9" nextobjectid="6">
  <editorsettings>
   <export format="csv"/>
  </editorsettings>
@@ -121,6 +121,13 @@
  <objectgroup id="2" name="entries">
   <object id="1" name="1" x="4.27273" y="288.091">
    <point/>
+  </object>
+ </objectgroup>
+ <objectgroup id="8" name="spawners">
+  <object id="5" name="spawners" x="128" y="112.182" width="31.8182" height="31.8182">
+   <properties>
+    <property name="count" type="int" value="4"/>
+   </properties>
   </object>
  </objectgroup>
  <objectgroup id="7" name="exits">
