@@ -19,9 +19,8 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         
         # Load images
         self.import_images(f'assets/characters/{self.name}/')  # calls the char's dir path
-        self.frame_index = 0  # frame number
+        self.frame_index = 0  
 
-        # from local var to stored in self*instance (can access self.animations)
         self.image = self.animations[f'idle-{direction}'][self.frame_index].convert_alpha()
         self.rect = self.image.get_rect(topleft=pos)
 
@@ -33,7 +32,7 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         self.combat_hitbox = self.rect.copy().inflate(-4, -4)
         self.combat_hitbox.center = self.rect.center
         
-        self.pos = vect(self.rect.center) # Character precise coordinates
+        self.pos = vect(self.rect.center) 
         self.last_direction = direction
         self.state = Idle(self)
         self.knockback_timer = 0
@@ -41,9 +40,19 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         # Circle/Ellpise shadow 
         shadow_width = int(self.rect.width * SHADOW_CONFIG['width_scale'])
         shadow_height = SHADOW_CONFIG['height']
-        self.shadow_surf = pygame.Surface((shadow_width, shadow_height), pygame.SRCALPHA) # RGBA flag
+        self.shadow_surf = pygame.Surface((shadow_width, shadow_height), pygame.SRCALPHA) 
         pygame.draw.ellipse(self.shadow_surf, (0, 0, 0, SHADOW_CONFIG['alpha']), self.shadow_surf.get_rect())
-        self.shadow_offset_y = SHADOW_CONFIG['offset_y'] # For camera
+        self.shadow_offset_y = SHADOW_CONFIG['offset_y'] 
+
+        # HP & Combat
+        self.hp = 100
+        self.max_hp = 100
+        self.invulnerable = False
+        self.invulnerability_timer = 0
+        self.hit_flash_timer = 0
+        self.transparent_flicker_timer = 0
+        self.knockback_speed = HP_CONFIG['hit_knockback']
+        self.invulnerability_duration = HP_CONFIG['invulnerability_duration']
         
     def import_images(self, path):
         self.animations = self.game.get_animations(path) # scans char dir {"idle": [], ...}
@@ -60,8 +69,8 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         # }
 
     # ANIMATIONN!!
-    def animate(self, state, fps, loop=True):
-        self.frame_index += fps
+    def animate(self, state, fps, dt, loop=True):
+        self.frame_index += fps * dt
 
         if self.frame_index >= len(self.animations[state]): #
             if loop:
@@ -114,7 +123,7 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
     
     # Motions & Equations
     def physics(self, dt, frict):
-        # Optimization: Get potential collisions once per frame
+        # Get potential collisions once per frame
         collidable_sprites = self.get_collides(self.scene.block_sprites)
 
         # X Direction
@@ -158,10 +167,12 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
             self.pos.y = self.hitbox.centery
             self.vel.y = 0
 
-        # Fix diagonal speed boost (only if not being knocked back)
+        
         if self.knockback_timer <= 0:
-            if self.vel.magnitude() >= self.speed:  # magnitude() gets the speed of vel.x and vel.y
-                self.vel = self.vel.normalize() * self.speed  # normalize() sets magnitude to 1.0 instead of going 40% (1.4) faster
+            current_speed = self.vel.magnitude()
+            if current_speed > self.speed:
+                # Smoothly reduce speed to self.speed instead of snapping instantly
+                self.vel = self.vel.normalize() * self.speed
 
         # Keep hitboxes synced
         self.rect.center = self.pos
@@ -172,9 +183,46 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         if new_state: self.state = new_state
         else: self.state
 
+    def take_damage(self, amount, knockback_dir=None, knockback_stun=0.25):
+        if self.invulnerable: 
+            return # Don't take damage
+        
+        self.hp = max(0, self.hp - amount)
+        
+        if self.invulnerability_duration > 0:
+            self.invulnerable = True
+            self.invulnerability_timer = self.invulnerability_duration
+            self.transparent_flicker_timer = self.invulnerability_duration
+
+        self.hit_flash_timer = HP_CONFIG['hit_flash_duration'] # Red flash
+            
+        # Knockback effect
+        self.knockback_timer = knockback_stun # Short stun duration
+        
+        if knockback_dir is None:
+            knockback_dir = vect(1, 0)
+        
+        if knockback_dir.length() > 0:
+            knockback_dir.normalize_ip()
+        
+        self.vel += knockback_dir * self.knockback_speed
+
     def update(self, dt):
         if self.knockback_timer > 0:
             self.knockback_timer -= dt
+            
+        # Update HP & I-frame timers
+        if self.invulnerable:
+            self.invulnerability_timer -= dt
+            if self.invulnerability_timer <= 0:
+                self.invulnerable = False
+                self.invulnerability_timer = 0
+        
+        if self.hit_flash_timer > 0:
+            self.hit_flash_timer -= dt
+            
+        if self.transparent_flicker_timer > 0:
+            self.transparent_flicker_timer -= dt
             
         self.get_direction()
         self.change_state()
@@ -193,7 +241,7 @@ class Idle:
 
     def update(self, dt, character):
         character.move_direction = vect(0, 0)
-        character.animate(f'idle-{character.get_direction()}', 10 * dt)
+        character.animate(f'idle-{character.get_direction()}', 10, dt)
         character.movement()
         character.physics(dt, character.frict)
 
@@ -210,6 +258,6 @@ class Run:
             return Idle(character)
 
     def update(self, dt, character):
-        character.animate(f'run-{character.get_direction()}', 15 * dt)
+        character.animate(f'run-{character.get_direction()}', 15, dt)
         character.movement()
         character.physics(dt, character.frict)

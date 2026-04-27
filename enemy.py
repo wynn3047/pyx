@@ -17,10 +17,9 @@ class Enemy(GameCharacter):
         self.contact_damage = random.randint(25, 40)
         self.contact_cooldown = 1
         self.contact_cooldown_timer = 0
-        
-        # Feedback
-        self.knocked_back = False
-        self.knockback_timer = 0
+        self.hp = 50
+        self.max_hp = 50
+        self.invulnerability_duration = 0
         
         # Wandering logic
         self.wander_waypoint = None
@@ -30,6 +29,13 @@ class Enemy(GameCharacter):
         
         self.spawn_pos = vect(pos)
         self.state = EnemyIdle(self)  # Initial AI state
+        self.frict = -10 # Custom friction for enemies (lower = more slide)
+
+    def movement(self):
+        # Disable AI movement intent during knockback
+        if self.knockback_timer > 0:
+            self.move_direction = vect(0, 0)
+        super().movement()
         
     def detect_player(self): 
         # Checks if player is within range. Returns normalized direction vector if found
@@ -178,15 +184,31 @@ class Enemy(GameCharacter):
     def update(self, dt):
         player_direction = self.detect_player()
         
-        # Handle state transitions and execution
+        # AI state transitions
         new_state = self.state.enter_state(self, player_direction)
         if new_state:
             self.state = new_state
+            
+        # Update HP & I-frame timers (from base class logic)
+        if self.invulnerable:
+            self.invulnerability_timer -= dt
+            if self.invulnerability_timer <= 0:
+                self.invulnerable = False
+                self.invulnerability_timer = 0
+        
+        if self.hit_flash_timer > 0:
+            self.hit_flash_timer -= dt
+            
+        if self.transparent_flicker_timer > 0:
+            self.transparent_flicker_timer -= dt
+
+        if self.knockback_timer > 0:
+            self.knockback_timer -= dt
 
         self.state.update(dt, self)
         self.check_player_contact(dt)
         self.get_direction()
-        self.physics(dt, -3)
+        self.physics(dt, self.frict)
 
 class EnemyIdle:
     # State when enemy is standing still
@@ -209,14 +231,13 @@ class EnemyIdle:
         enemy.idle_timer -= dt
         enemy.move_direction = vect(0, 0)
         enemy.movement()
-        enemy.animate(f'idle-{enemy.get_direction()}', 10 * dt)
+        enemy.animate(f'idle-{enemy.get_direction()}', 10, dt)
 
 
 class Wander:
     # State when enemy is moving towards a random waypoint
     def __init__(self, enemy):
         enemy.frame_index = 0
-        enemy.stuck_timer = 0
         enemy.speed = 5
         
     def __str__(self):
@@ -247,26 +268,22 @@ class Wander:
             enemy.steer_to_direction(direction.normalize(), dt)
 
         enemy.movement()
-        enemy.animate(f'run-{enemy.get_direction()}', 15 * dt)
+        enemy.animate(f'run-{enemy.get_direction()}', 15, dt)
         
 class Chase:
     # State when enemy is actively pursuing the player
     def __init__(self, enemy):
         enemy.frame_index = 0
         enemy.is_chasing = True
-        enemy.speed = 30
-        self.lose_timer = 4 # Wait 4 seconds before giving up
+        enemy.speed = 20
         
     def __str__(self):
         return "Chase"
 
     def enter_state(self, enemy, player_direction):
         if not player_direction:
-            if self.lose_timer <= 0:
-                enemy.is_chasing = False
-                return EnemyIdle(enemy)
-        else:
-            self.lose_timer = 2.0 # Reset timer if player is seen
+            enemy.is_chasing = False
+            return EnemyIdle(enemy)
         return None
     
     def update(self, dt, enemy):
@@ -279,4 +296,4 @@ class Chase:
             enemy.steer_to_direction(player_direction, dt)
 
         enemy.movement()
-        enemy.animate(f'run-{enemy.get_direction()}', 15 * dt)
+        enemy.animate(f'run-{enemy.get_direction()}', 15, dt)

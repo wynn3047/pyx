@@ -1,4 +1,5 @@
 import pygame
+import random
 from settings import *
 from characters import GameCharacter
 
@@ -21,12 +22,6 @@ class Player(GameCharacter):
         self.hp = HP_CONFIG['player_max_hp']
         self.max_hp = HP_CONFIG['player_max_hp']
         
-        self.invulnerable = False 
-        self.invulnerability_timer = 0 # I-Frame timer
-        
-        self.hit_flash_timer = 0 # Red overlay hit duration
-        self.transparent_flicker_timer = 0 # Flicker duration
-        
         self.regen_delay_timer = 0 # Cooldown after taking  dmg
         self.hp_regen = HP_CONFIG['player_hp_regen']
         
@@ -35,30 +30,8 @@ class Player(GameCharacter):
         return self.hp <= (self.max_hp / 2)
 
     def take_damage(self, amount, knockback_dir=None, knockback_stun=0.25):
-        if self.invulnerable: 
-            return # Don't take damage
-        
-        self.hp = max(0, self.hp - amount)
-        
-        self.invulnerable = True
-        self.invulnerability_timer = HP_CONFIG['invulnerability_duration']
-
-        self.hit_flash_timer = HP_CONFIG['hit_flash_duration'] # Red flash
-        self.transparent_flicker_timer = HP_CONFIG['invulnerability_duration'] # Flicker transparency
-        
+        super().take_damage(amount, knockback_dir, knockback_stun)
         self.regen_delay_timer = HP_CONFIG['player_regen_delay'] 
-            
-        # Knockback effect
-        self.knockback_speed = HP_CONFIG['hit_knockback']
-        self.knockback_timer = knockback_stun # Short stun duration
-        
-        if knockback_dir is None:
-            knockback_dir = vect(1, 0)
-        
-        if knockback_dir.length() > 0:
-            knockback_dir.normalize_ip()
-        
-        self.vel += knockback_dir * self.knockback_speed 
 
     def update_regen(self, dt):
         # Passive HP regen during only Idle/Run states
@@ -157,18 +130,6 @@ class Player(GameCharacter):
         # HP & I-frame timers
         self.update_regen(dt)
         
-        if self.invulnerable:
-            self.invulnerability_timer -= dt
-            if self.invulnerability_timer <= 0:
-                self.invulnerable = False # Can take dmg again
-                self.invulnerability_timer = 0
-        
-        if self.hit_flash_timer > 0:
-            self.hit_flash_timer -= dt # Red flash fades
-            
-        if self.transparent_flicker_timer > 0:
-            self.transparent_flicker_timer -= dt # Flicker fades
-        
         if self.hp <= 0:
             self.scene.start_death_sequence() # # Trigger death seq
         
@@ -183,6 +144,9 @@ class Idle:
         return self.__class__.__name__
 
     def enter_state(self, player):
+        if INPUTS['left_click']:
+            return Throw(player)
+
         if player.vel.magnitude() > 1: # Any movement transition to Run class
             return Run(player)
 
@@ -190,7 +154,7 @@ class Idle:
             return Tumble(player)
 
     def update(self, dt, player):
-        player.animate(f'idle-{player.get_direction()}', 10 * dt)
+        player.animate(f'idle-{player.get_direction()}', 10, dt)
         player.movement()
         player.physics(dt, player.frict)
 
@@ -202,6 +166,9 @@ class Run:
         return self.__class__.__name__
 
     def enter_state(self, player):
+        if INPUTS['left_click']:
+            return Throw(player)
+
         if INPUTS['space'] and player.tumble_charges > 0:
             return Tumble(player)
 
@@ -209,15 +176,82 @@ class Run:
             return Idle(player)
 
     def update(self, dt, player):
-        player.animate(f'run-{player.get_direction()}', 15 * dt)
+        player.animate(f'run-{player.get_direction()}', 15, dt)
         player.movement()
         player.physics(dt, player.frict)
+
+class Throw:
+    def __init__(self, player):
+        player.frame_index = 0
+        self.spawned = False
+        # Randomize which throw animation to use
+        self.rand_anim = random.choice(['throw1', 'throw2', 'throw3'])
+
+        # Determine direction based on mouse position
+        mouse_pos = vect(pygame.mouse.get_pos())
+        target_world_pos = mouse_pos + player.scene.camera.offset
+        if target_world_pos.x >= player.pos.x:
+            player.last_direction = 'right'
+        else:
+            player.last_direction = 'left'
+
+        # Kill all momentum and movement intent
+        player.vel = vect(0, 0)
+        player.accel = vect(0, 0)
+        player.move_direction = vect(0, 0)
+
+
+    def __str__(self):
+        return "Throw"
+
+    def enter_state(self, player):
+        # Once animation finishes, return to idle
+        if int(player.frame_index) >= len(player.animations[f'{self.rand_anim}-{player.get_direction()}']) - 1:
+            return Idle(player)
+        return None
+
+    def update(self, dt, player):
+        player.animate(f'{self.rand_anim}-{player.get_direction()}', 20, dt, False)
+
+        # Spawn projectile at the "release" frame (mine is 4)
+
+        if int(player.frame_index) == 4 and not self.spawned:
+            self.spawn_dagger(player)
+            self.spawned = True
+
+        GameCharacter.movement(player) 
+        player.physics(dt, player.frict)
+
+
+    def spawn_dagger(self, player):
+        from projectiles import Projectile
+        # Calculate direction from player to world-space mouse
+        mouse_pos = vect(pygame.mouse.get_pos())
+        camera_offset = player.scene.camera.offset
+        target_world_pos = mouse_pos + camera_offset
+        
+        direction = (target_world_pos - player.pos)
+        if direction.length() > 0:
+            direction = direction.normalize()
+        else:
+            direction = vect(1, 0) # Fallback to right
+            
+        # Spawn the dagger
+        Projectile(
+            player.scene,
+            [player.scene.update_sprites, player.scene.draw_sprites],
+            player.pos,
+            direction,
+            speed=1000,
+            damage=25,
+            sprite_path='assets\characters\player\weapon\dagger.png'
+        )
 
 class Tumble:
     def __init__(self, player):
         Idle.__init__(self, player)
         INPUTS['space'] = False
-        self.timer = 0.45 # Animation timer
+        self.timer = 0.45 
         self.dash_pending = False # Input buffer
         self.vel = player.vect_to_mouse(player.tumble_speed) 
         player.tumble_charges -= 1 # Consume a charge
@@ -238,7 +272,7 @@ class Tumble:
 
     def update(self, dt, player):
         self.timer -= dt
-        player.animate(f'tumble-{player.get_direction()}', 18 * dt, False) # Play tumble animation once
+        player.animate(f'tumble-{player.get_direction()}', 18, dt, False) # Play tumble animation once
 
         player.physics(dt, -5) # Apply physics with low friction to slide
         player.accel = vect() # No acceleration during tumble

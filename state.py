@@ -200,7 +200,7 @@ class Scene(State):
             current_time = pygame.time.get_ticks()
 
             # If player has been gone for more than 15 seconds, enemies return to spawn
-            reset_to_spawn = (current_time - saved_time) > 15000 
+            reset_to_spawn = (current_time - saved_time) > 5000 
             
             for state in saved_enemies:
                 # Decide position based on timer
