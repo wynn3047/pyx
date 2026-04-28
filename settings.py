@@ -6,8 +6,9 @@ TILE_SIZE = 16
 HEAD_FONT = "assets/fonts/alagard.ttf"
 PRIMARY_FONT = "assets/fonts/homespun.ttf"
 
-DEBUG_HITBOXES = False
-DEBUG_TEXT = True
+class DEBUG:
+    HITBOXES = False
+    TEXT = False
 
 INPUTS = {
     'escape' : False,
@@ -22,7 +23,8 @@ INPUTS = {
     'right_click' : False,
     'scroll_up' : False,
     'scroll_down' : False,
-    'enter': False
+    'enter': False,
+    'f8': False
 }
 
 COLORS = {
@@ -42,7 +44,7 @@ HP_CONFIG = {
     'player_regen_delay': 7, # Regen delay after hit
     'invulnerability_duration': 0.67, # For invicibility frames
     'hit_flash_duration': 0.1,
-    'hit_knockback': 200,
+    'hit_knockback': 80,
     'transparency_alpha': 100,
     'flicker_interval': 0.08,     
 }

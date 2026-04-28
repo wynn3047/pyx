@@ -10,7 +10,7 @@ class Player(GameCharacter):
         self.combat_hitbox = self.rect.copy().inflate(-5, -1) # Custom for combat hitbox
         self.combat_hitbox.center = self.rect.center
         self.state = Idle(self)
-        self.speed = 80
+        self.speed = 90
         
         # Tumble cooldown and usage
         self.tumble_charges = 2
@@ -24,6 +24,11 @@ class Player(GameCharacter):
         
         self.regen_delay_timer = 0 # Cooldown after taking  dmg
         self.hp_regen = HP_CONFIG['player_hp_regen']
+        self.knockback_speed = 250
+        
+        self.throw_vel = 600
+        self.throw_rate = 20
+        self.last_click = None
         
     @property
     def is_low_hp(self):
@@ -187,10 +192,12 @@ class Throw:
         # Randomize which throw animation to use
         self.rand_anim = random.choice(['throw1', 'throw2', 'throw3'])
 
-        # Determine direction based on mouse position
+        # Capture target position at the moment of the click
         mouse_pos = vect(pygame.mouse.get_pos())
-        target_world_pos = mouse_pos + player.scene.camera.offset
-        if target_world_pos.x >= player.pos.x:
+        self.target_world_pos = mouse_pos + player.scene.camera.offset
+        
+        # Determine direction based on captured target
+        if self.target_world_pos.x >= player.pos.x:
             player.last_direction = 'right'
         else:
             player.last_direction = 'left'
@@ -211,7 +218,7 @@ class Throw:
         return None
 
     def update(self, dt, player):
-        player.animate(f'{self.rand_anim}-{player.get_direction()}', 20, dt, False)
+        player.animate(f'{self.rand_anim}-{player.get_direction()}', player.throw_rate, dt, False)
 
         # Spawn projectile at the "release" frame (mine is 4)
 
@@ -225,12 +232,8 @@ class Throw:
 
     def spawn_dagger(self, player):
         from projectiles import Projectile
-        # Calculate direction from player to world-space mouse
-        mouse_pos = vect(pygame.mouse.get_pos())
-        camera_offset = player.scene.camera.offset
-        target_world_pos = mouse_pos + camera_offset
-        
-        direction = (target_world_pos - player.pos)
+        # Use the captured target world position from the start of the throw
+        direction = (self.target_world_pos - player.pos)
         if direction.length() > 0:
             direction = direction.normalize()
         else:
@@ -242,7 +245,7 @@ class Throw:
             [player.scene.update_sprites, player.scene.draw_sprites],
             player.pos,
             direction,
-            speed=1000,
+            speed=player.throw_vel,
             damage=25,
             sprite_path='assets\characters\player\weapon\dagger.png'
         )
@@ -274,6 +277,6 @@ class Tumble:
         self.timer -= dt
         player.animate(f'tumble-{player.get_direction()}', 18, dt, False) # Play tumble animation once
 
-        player.physics(dt, -5) # Apply physics with low friction to slide
+        player.physics(dt, 5) # Apply physics with low friction to slide
         player.accel = vect() # No acceleration during tumble
         player.vel = self.vel # Maintain dash velocity towards target

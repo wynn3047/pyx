@@ -128,11 +128,14 @@ class Camera(pygame.sprite.Group):
     def show_hitbox(self, screen, sprite, offset):
         # Visual hitbox
         from player import Player
+        from projectiles import Projectile
         
         if isinstance(sprite, Player):
             color = (0, 255, 0)
         elif sprite.z in ('blocks', 'holes'):
             color = (255, 0, 0)
+        elif isinstance(sprite, Projectile):
+            color = COLORS['blue']
         else:
             color = None
             
@@ -173,7 +176,7 @@ class Camera(pygame.sprite.Group):
                     sprite_image = self.apply_hit_effects(sprite, sprite.image)
                     screen.blit(sprite_image, offset_pos) # Put the image on the screen at that shifted position.
 
-                    if DEBUG_HITBOXES:
+                    if DEBUG.HITBOXES:
                         self.show_hitbox(screen, sprite, draw_offset)
         
         self.draw_hearts(screen, scene)

@@ -14,7 +14,7 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         self.force = 2000
         self.accel = vect()
         self.vel = vect()
-        self.frict = -15
+        self.frict = 15
         self.move_direction = vect()
         
         # Load images
@@ -60,13 +60,6 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         for animation in self.animations.keys():
             full_path = path + animation # builds the full path with the animation dir name
             self.animations[animation] = self.game.get_images(full_path) # appends the images for the specific dir name
-
-        # Whats actually gonn happen
-        # {
-        #     "idle": [surface1, surface2, surface3],
-        #     "walk": [surface4, surface5, surface6],
-        #     "run": [surface7, surface8]
-        # }
 
     # ANIMATIONN!!
     def animate(self, state, fps, dt, loop=True):
@@ -117,26 +110,28 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
                     self.vel.y = 0
                     self.pos.y = self.hitbox.centery
 
-        # Sync the visual rect to the physical hitbox
-        self.rect.center = self.hitbox.center
-
-    
     # Motions & Equations
     def physics(self, dt, frict):
-        # Get potential collisions once per frame
+        # Optimization: Get potential collisions once per frame
         collidable_sprites = self.get_collides(self.scene.block_sprites)
 
+        # 1. APPLY ACCELERATION
+        self.vel += self.accel * dt
+
+        # 2. APPLY FRICTION (Velocity Damping)
+        # velocity *= (1 - drag * dt) ensures consistent speed loss per second
+        drag = abs(frict)
+        self.vel *= max(0, 1 - drag * dt)
+
+        # 3. APPLY MOVEMENT & COLLISIONS
+        
         # X Direction
-        self.accel.x += self.vel.x * frict # Applying increasing friction when accelerating
-        self.vel.x += self.accel.x * dt # Velocity change
-        self.pos.x += self.vel.x * dt + 0.5 * self.accel.x * dt**2 # Calculate the precise pos
+        self.pos.x += self.vel.x * dt
         self.hitbox.centerx = self.pos.x
         self.collisions('x', collidable_sprites)
 
         # Y Direction
-        self.accel.y += self.vel. y * frict
-        self.vel.y += self.accel.y * dt
-        self.pos.y += self.vel.y * dt + 0.5 * self.accel.y * dt**2
+        self.pos.y += self.vel.y * dt
         self.hitbox.centery = self.pos.y
         self.collisions('y', collidable_sprites)
 
@@ -167,11 +162,10 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
             self.pos.y = self.hitbox.centery
             self.vel.y = 0
 
-        
+        # SPEED CLAMPING
         if self.knockback_timer <= 0:
             current_speed = self.vel.magnitude()
             if current_speed > self.speed:
-                # Smoothly reduce speed to self.speed instead of snapping instantly
                 self.vel = self.vel.normalize() * self.speed
 
         # Keep hitboxes synced

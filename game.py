@@ -54,6 +54,10 @@ class Game:
                     INPUTS['right'] = True
                 elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     INPUTS['enter'] = True
+                elif event.key == pygame.K_F8:
+                    INPUTS['f8'] = True
+                    DEBUG.TEXT = not DEBUG.TEXT
+                    DEBUG.HITBOXES = not DEBUG.HITBOXES
 
             # When released
             if event.type == pygame.KEYUP:
@@ -71,6 +75,8 @@ class Game:
                     INPUTS['right'] = False
                 elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     INPUTS['enter'] = False
+                elif event.key == pygame.K_F8:
+                    INPUTS['f8'] = False
 
             # Mouse events
             if event.type == pygame.MOUSEWHEEL:

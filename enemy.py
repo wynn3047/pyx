@@ -29,8 +29,9 @@ class Enemy(GameCharacter):
         
         self.spawn_pos = vect(pos)
         self.state = EnemyIdle(self)  # Initial AI state
-        self.frict = -10 # Custom friction for enemies (lower = more slide)
-
+        self.frict = 10 # Custom friction for enemies (
+        self.knockback_speed = 200
+        
     def movement(self):
         # Disable AI movement intent during knockback
         if self.knockback_timer > 0:
@@ -275,7 +276,7 @@ class Chase:
     def __init__(self, enemy):
         enemy.frame_index = 0
         enemy.is_chasing = True
-        enemy.speed = 20
+        enemy.speed = 50
         
     def __str__(self):
         return "Chase"

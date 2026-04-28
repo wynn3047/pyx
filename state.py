@@ -80,7 +80,7 @@ class Scene(State):
         self.heart_sprite = pygame.image.load('assets/ui/heart.png').convert_alpha()
         # Pre-render black heart for background
         self.black_heart_sprite = self.heart_sprite.copy()
-        self.black_heart_sprite.fill((0, 0, 0), special_flags=pygame.BLEND_RGB_MULT)
+        self.black_heart_sprite.fill(COLORS['black'], special_flags=pygame.BLEND_RGB_MULT)
 
     def go_to_scene(self):
         # Create the next scene based on stored navigation data
@@ -244,8 +244,8 @@ class Scene(State):
         self.camera.draw(screen, self.draw_sprites, self)
         self.transition.draw(screen)
                 
-        #  Draw debug text
-        if DEBUG_TEXT:
+        #  Debugger
+        if DEBUG.TEXT:
             self.debugger([
                 str(f'FPS: {round(self.game.clock.get_fps(), 2)}'),
                 str(f'Vel: {round(self.player.vel, 2)}'),
@@ -259,5 +259,7 @@ class Scene(State):
                 str(f'Death Phase: {self.death_phase}'),
                 str(f'Time: {round(pygame.time.get_ticks() / 1000, 1)}')
             ])
+            
+            
                 
     
