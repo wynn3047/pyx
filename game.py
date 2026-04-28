@@ -19,7 +19,7 @@ class Game:
         self.head_font = pygame.font.Font(HEAD_FONT, TILE_SIZE)
         self.primary_font = pygame.font.Font(PRIMARY_FONT, 10)
         self.running = True
-        self.fps = 60
+        self.fps = 60  
 
         self.states = []
         self.splash_screen = SplashScreen(self)

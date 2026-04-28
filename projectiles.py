@@ -21,7 +21,7 @@ class Projectile(pygame.sprite.Sprite):
         
         self.rect = self.image.get_rect(center=pos)
         # Narrow hitbox for precision
-        self.hitbox = self.rect.copy().inflate(-self.rect.width * 0.8, -self.rect.height * 0.8)
+        self.hitbox = self.rect.copy().inflate(-self.rect.width * 0.85, -self.rect.height * 0.85)
         
         self.lifespan = 2 # Seconds before disappearing
         self.timer = 0
@@ -45,6 +45,7 @@ class Projectile(pygame.sprite.Sprite):
     def on_enemy_hit(self, enemy):
         # Calculate knockback direction
         enemy.take_damage(self.damage, self.direction)
+        enemy.got_hit = True
         self.kill() # Or not (piercing)
     def update(self, dt):
         self.timer += dt

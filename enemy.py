@@ -1,3 +1,4 @@
+import pygame
 import random 
 from settings import * 
 from characters import GameCharacter
@@ -17,8 +18,8 @@ class Enemy(GameCharacter):
         self.contact_damage = random.randint(25, 40)
         self.contact_cooldown = 1
         self.contact_cooldown_timer = 0
-        self.hp = 50
-        self.max_hp = 50
+        self.hp = 40
+        self.max_hp = 40
         self.invulnerability_duration = 0
         
         # Wandering logic
@@ -29,9 +30,9 @@ class Enemy(GameCharacter):
         
         self.spawn_pos = vect(pos)
         self.state = EnemyIdle(self)  # Initial AI state
-        self.frict = 10 # Custom friction for enemies (
+        self.frict = 10 
         self.knockback_speed = 200
-        
+        self.got_hit = False
     def movement(self):
         # Disable AI movement intent during knockback
         if self.knockback_timer > 0:
@@ -183,14 +184,11 @@ class Enemy(GameCharacter):
                 self.move_direction.normalize_ip()
     
     def update(self, dt):
-        player_direction = self.detect_player()
-        
-        # AI state transitions
-        new_state = self.state.enter_state(self, player_direction)
-        if new_state:
-            self.state = new_state
-            
-        # Update HP & I-frame timers (from base class logic)
+        # 1. Check for Death
+        if self.hp <= 0 and not isinstance(self.state, Death):
+            self.state = Death(self)
+
+        # 2. Timers
         if self.invulnerable:
             self.invulnerability_timer -= dt
             if self.invulnerability_timer <= 0:
@@ -206,10 +204,53 @@ class Enemy(GameCharacter):
         if self.knockback_timer > 0:
             self.knockback_timer -= dt
 
-        self.state.update(dt, self)
-        self.check_player_contact(dt)
-        self.get_direction()
-        self.physics(dt, self.frict)
+        # 3. State Logic
+        if isinstance(self.state, Death):
+            self.state.update(dt, self)
+        else:
+            player_direction = self.detect_player()
+            new_state = self.state.enter_state(self, player_direction)
+            if new_state:
+                self.state = new_state
+            
+            self.state.update(dt, self)
+            self.check_player_contact(dt)
+            self.get_direction()
+            self.physics(dt, self.frict)
+
+class Death:
+    def __init__(self, enemy):
+        enemy.frame_index = 0
+        # Stop all movement
+        enemy.vel = vect(0, 0)
+        enemy.accel = vect(0, 0)
+        enemy.move_direction = vect(0, 0)
+        
+        # Move to floor layer
+        enemy.z = 'blocks'
+        
+        # Disable hitboxes
+        enemy.hitbox = pygame.Rect(0,0,0,0)
+        enemy.combat_hitbox = pygame.Rect(0,0,0,0)
+        
+        self.death_anim = f'death-{enemy.get_direction()}'
+        self.despawn_timer = 7 # Linger time
+        
+    def __str__(self):
+        return "Death"
+        
+    def enter_state(self, enemy, player_direction):
+        return None
+        
+    def update(self, dt, enemy):
+        # Play animation once
+        enemy.animate(self.death_anim, 10, dt, loop=False)
+        
+        # Once at last frame, wait to despawn
+        if int(enemy.frame_index) >= len(enemy.animations[self.death_anim]) - 1:
+            self.despawn_timer -= dt
+            if self.despawn_timer <= 0:
+                enemy.kill()
 
 class EnemyIdle:
     # State when enemy is standing still
@@ -245,7 +286,7 @@ class Wander:
         return "Wander"
     
     def enter_state(self, enemy, player_direction):
-        if player_direction:
+        if player_direction or enemy.got_hit:
             return Chase(enemy)
         
         if not enemy.wander_waypoint:
@@ -276,7 +317,7 @@ class Chase:
     def __init__(self, enemy):
         enemy.frame_index = 0
         enemy.is_chasing = True
-        enemy.speed = 50
+        enemy.speed = 30
         
     def __str__(self):
         return "Chase"
@@ -290,8 +331,6 @@ class Chase:
     def update(self, dt, enemy):
         player_direction = enemy.detect_player()
         if not player_direction:
-            self.lose_timer -= dt
-            # Move towards last known direction or just slow down
             enemy.move_direction *= 0.9
         else:
             enemy.steer_to_direction(player_direction, dt)

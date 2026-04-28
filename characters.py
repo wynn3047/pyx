@@ -100,26 +100,26 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         for sprite in collidable_sprites:
             if self.hitbox.colliderect(sprite.hitbox):
                 if axis == 'x':
-                    if self.vel.x >= 0: self.hitbox.right = sprite.hitbox.left
-                    if self.vel.x <= 0: self.hitbox.left = sprite.hitbox.right
+                    if self.vel.x > 0: # Moving Right
+                        self.hitbox.right = sprite.hitbox.left
+                    elif self.vel.x < 0: # Moving Left
+                        self.hitbox.left = sprite.hitbox.right
                     self.vel.x = 0
                     self.pos.x = self.hitbox.centerx
                 if axis == 'y':
-                    if self.vel.y >= 0: self.hitbox.bottom = sprite.hitbox.top
-                    if self.vel.y <= 0: self.hitbox.top = sprite.hitbox.bottom
+                    if self.vel.y > 0: # Moving Down
+                        self.hitbox.bottom = sprite.hitbox.top
+                    elif self.vel.y < 0: # Moving Up
+                        self.hitbox.top = sprite.hitbox.bottom
                     self.vel.y = 0
                     self.pos.y = self.hitbox.centery
 
     # Motions & Equations
     def physics(self, dt, frict):
-        # Optimization: Get potential collisions once per frame
-        collidable_sprites = self.get_collides(self.scene.block_sprites)
-
         # 1. APPLY ACCELERATION
         self.vel += self.accel * dt
 
-        # 2. APPLY FRICTION (Velocity Damping)
-        # velocity *= (1 - drag * dt) ensures consistent speed loss per second
+        # 2. APPLY FRICTION
         drag = abs(frict)
         self.vel *= max(0, 1 - drag * dt)
 
@@ -128,12 +128,12 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         # X Direction
         self.pos.x += self.vel.x * dt
         self.hitbox.centerx = self.pos.x
-        self.collisions('x', collidable_sprites)
+        self.collisions('x', self.scene.block_sprites)
 
         # Y Direction
         self.pos.y += self.vel.y * dt
         self.hitbox.centery = self.pos.y
-        self.collisions('y', collidable_sprites)
+        self.collisions('y', self.scene.block_sprites)
 
         # MAP BOUNDARIES: Clamp hitbox within the map dimensions
         map_w, map_h = self.scene.camera.scene_size
@@ -218,9 +218,12 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         if self.transparent_flicker_timer > 0:
             self.transparent_flicker_timer -= dt
             
+        # 1. Execute current state logic (Physics happens here)
+        self.state.update(dt, self)
+
+        # 2. Update direction and state for the NEXT frame based on resolved physics
         self.get_direction()
         self.change_state()
-        self.state.update(dt, self)
 
 class Idle:
     def __init__(self, character):

@@ -11,6 +11,7 @@ class Player(GameCharacter):
         self.combat_hitbox.center = self.rect.center
         self.state = Idle(self)
         self.speed = 90
+        self.throw_damage = random.randint(15, 20)
         
         # Tumble cooldown and usage
         self.tumble_charges = 2
@@ -75,7 +76,6 @@ class Player(GameCharacter):
         if self.knockback_timer > 0:
             self.move_direction = vect(0, 0)
         else:
-            # X inputs
             x = int(INPUTS['right']) - int(INPUTS['left'])
             y = int(INPUTS['down']) - int(INPUTS['up'])
             self.move_direction = vect(x, y)
@@ -149,10 +149,14 @@ class Idle:
         return self.__class__.__name__
 
     def enter_state(self, player):
+        x = int(INPUTS['right']) - int(INPUTS['left'])
+        y = int(INPUTS['down']) - int(INPUTS['up'])
+        is_inputting_movement = (x != 0 or y != 0)
+        
         if INPUTS['left_click']:
             return Throw(player)
 
-        if player.vel.magnitude() > 1: # Any movement transition to Run class
+        if is_inputting_movement and player.vel.magnitude() > 0.5: # Any movement transition to Run class
             return Run(player)
 
         if INPUTS['space'] and player.tumble_charges > 0:
@@ -171,13 +175,17 @@ class Run:
         return self.__class__.__name__
 
     def enter_state(self, player):
+        x = int(INPUTS['right']) - int(INPUTS['left'])
+        y = int(INPUTS['down']) - int(INPUTS['up'])
+        is_inputting_movement = (x != 0 or y != 0)
+        
         if INPUTS['left_click']:
             return Throw(player)
 
         if INPUTS['space'] and player.tumble_charges > 0:
             return Tumble(player)
 
-        if player.vel.magnitude() < 1: # Flip back to idle
+        if not is_inputting_movement: # Flip back to idle
             return Idle(player)
 
     def update(self, dt, player):
@@ -190,7 +198,7 @@ class Throw:
         player.frame_index = 0
         self.spawned = False
         # Randomize which throw animation to use
-        self.rand_anim = random.choice(['throw1', 'throw2', 'throw3'])
+        self.rand_anim = random.choice(['throw2', 'throw3'])
 
         # Capture target position at the moment of the click
         mouse_pos = vect(pygame.mouse.get_pos())
@@ -246,7 +254,7 @@ class Throw:
             player.pos,
             direction,
             speed=player.throw_vel,
-            damage=25,
+            damage=player.throw_damage,
             sprite_path='assets\characters\player\weapon\dagger.png'
         )
 
