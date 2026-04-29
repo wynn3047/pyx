@@ -6,7 +6,7 @@ class Projectile(pygame.sprite.Sprite):
     def __init__(self, scene, groups, pos, direction, speed, damage, sprite_path):
         super().__init__(groups)
         self.scene = scene
-        self.z = 'blocks' 
+        self.z = 'holes' 
         
         self.original_image = pygame.image.load(sprite_path).convert_alpha()
         
@@ -27,9 +27,10 @@ class Projectile(pygame.sprite.Sprite):
         self.timer = 0
 
     def check_collisions(self):
-        # Check Walls
+        # Check Walls & Holes
+        from objects import Holes
         for wall in self.scene.block_sprites:
-            if self.hitbox.colliderect(wall.hitbox):
+            if self.hitbox.colliderect(wall.hitbox) and not isinstance(wall, Holes):
                 self.on_wall_hit()
                 return
 

@@ -147,7 +147,7 @@
   </object>
   <object id="36" name="spawners" x="119.333" y="349.333" width="91.3333" height="26.3334">
    <properties>
-    <property name="count" type="int" value="6"/>
+    <property name="count" type="int" value="4"/>
    </properties>
   </object>
   <object id="38" name="spawners" x="409.667" y="298.667" width="77.6667" height="39.3333">
@@ -157,12 +157,12 @@
   </object>
   <object id="42" name="spawners" x="201.333" y="133.667" width="51.6667" height="40.6667">
    <properties>
-    <property name="count" type="int" value="4"/>
+    <property name="count" type="int" value="3"/>
    </properties>
   </object>
   <object id="44" name="spawners" x="78" y="219.667" width="33.3333" height="15">
    <properties>
-    <property name="count" type="int" value="4"/>
+    <property name="count" type="int" value="2"/>
    </properties>
   </object>
   <object id="46" name="spawners" x="711.318" y="85.5" width="23.6136" height="8.29545">

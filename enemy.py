@@ -35,9 +35,9 @@ class Enemy(GameCharacter):
         self.spawn_pos = vect(pos)
         self.state = EnemyIdle(self)  # Initial AI state
         self.frict = 10 
-        self.knockback_speed = 200
+        self.knockback_speed = 50
         self.got_hit = False
-        
+
     def movement(self):
         # Disable AI movement intent during knockback
         if self.knockback_timer > 0:
@@ -294,7 +294,7 @@ class Wander:
         direction = enemy.wander_waypoint - enemy.pos
         
         # Return to idle if we reached the destination
-        if direction.length() < 20: # 20 px threshold
+        if direction.length() < 32: # 32 px threshold
             enemy.vel = vect(0, 0)
             return EnemyIdle(enemy)
         
@@ -317,6 +317,7 @@ class Chase:
         enemy.frame_index = 0
         enemy.is_chasing = True
         enemy.speed = 30
+        enemy.force = 2500
         
     def __str__(self):
         return "Chase"

@@ -19,7 +19,7 @@ class Player(GameCharacter):
         self.tumble_max_charges = 2
         self.tumble_cooldown = 1.1
         self.tumble_cooldown_timer = 0
-        self.tumble_speed = 450
+        self.tumble_speed = 400
         # Player HP & Invincibility
         self.hp = HP_CONFIG['player_max_hp']
         self.max_hp = HP_CONFIG['player_max_hp']
@@ -29,7 +29,7 @@ class Player(GameCharacter):
         self.knockback_speed = 250
         
         self.throw_vel = 600
-        self.throw_rate = 20
+        self.throw_rate = 16.5
         self.last_click = None
         
     @property
@@ -123,11 +123,14 @@ class Player(GameCharacter):
         self.tumble_cooldown_timer = data.get('tumble_cooldown_timer', self.tumble_cooldown_timer)
         self.regen_delay_timer = data.get('regen_delay_timer', self.regen_delay_timer)
 
-    @property
-    def is_low_hp(self):
-        return self.hp <= self.max_hp / 2
-
     def update(self, dt):
+        if self.hp <= 0:
+            if not isinstance(self.state, Death):
+                self.state = Death(self)
+                self.scene.start_death_sequence()
+            super().update(dt)
+            return
+
         super().update(dt)
         self.exit_scene()
         
@@ -140,9 +143,6 @@ class Player(GameCharacter):
         
         # HP & I-frame timers
         self.update_regen(dt)
-        
-        if self.hp <= 0:
-            self.scene.start_death_sequence() # # Trigger death seq
         
         if INPUTS['backspace']:
             self.take_damage(10)
@@ -294,3 +294,29 @@ class Tumble:
         player.physics(dt, 5) # Apply physics with low friction to slide
         player.accel = vect() # No acceleration during tumble
         player.vel = self.vel # Maintain dash velocity towards target
+        
+class Death:
+    # Death state: Play death animation, no movement, no state transitions
+    
+    def __init__(self, player):
+        player.frame_index = 0
+        # Kill all momentum
+        player.vel = vect(0, 0)
+        player.accel = vect(0, 0)
+        player.move_direction = vect(0, 0)
+        self.anim_name = f'death-{player.get_direction()}'
+        
+    def __str__(self):
+        return "Death"
+    
+    def enter_state(self, player):
+        return None  # Never transition out (Scene handles restart)
+    
+    def update(self, dt, player):
+        player.animate(self.anim_name, 14, dt, loop=False)
+        # Kill all movement intent
+        player.vel = vect(0, 0)
+        player.accel = vect(0, 0)
+        player.move_direction = vect(0, 0)
+        # Sync rect to position
+        player.rect.center = player.pos

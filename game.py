@@ -135,8 +135,11 @@ class Game:
     # Load all images full file path from directory into a list
     def get_images(self, path):
         images = []
-        for file in os.listdir(path): # listdir gets filenames on that path dir
-            full_path = os.path.join(path, file) # combines and build the full formatted file path
+        # Sort files numerically to avoid [0, 1, 10, 11...] sorting issues
+        file_list = sorted(os.listdir(path), key=lambda f: int(f.split('.')[0]) if f.split('.')[0].isdigit() else f)
+        
+        for file in file_list: 
+            full_path = os.path.join(path, file) 
             image = pygame.image.load(full_path).convert_alpha()
             images.append(image)
         return images
