@@ -24,15 +24,20 @@ class Enemy(GameCharacter):
         
         # Wandering logic
         self.wander_waypoint = None
-        self.wander_waypoint_radius = 40
+        self.wander_waypoint_radius = 60
         self.idle_duration = random.uniform(2, 4)
         self.idle_timer = 0
+        
+        # Aggro / Memory
+        self.aggro_timer = 0
+        self.aggro_duration = 5.0 # Stay aggroed for 5s after hit or detection
         
         self.spawn_pos = vect(pos)
         self.state = EnemyIdle(self)  # Initial AI state
         self.frict = 10 
         self.knockback_speed = 200
         self.got_hit = False
+        
     def movement(self):
         # Disable AI movement intent during knockback
         if self.knockback_timer > 0:
@@ -45,13 +50,33 @@ class Enemy(GameCharacter):
             return None
             
         distance = self.pos.distance_to(self.scene.player.pos)
-        if distance < self.detection_radius:
+        
+        # If aggroed, we ignore the radius (up to a reasonable map limit)
+        if self.aggro_timer > 0 or distance < self.detection_radius:
             direction = self.scene.player.pos - self.pos
             if direction.length() < 1:
                 return vect(1, 0)  
+            
+            # Refresh aggro timer if player is still within normal detection range
+            if distance < self.detection_radius:
+                self.aggro_timer = self.aggro_duration
+                
             return direction.normalize()
         return None
     
+    def start_chase(self):
+        # Only switch if not already in Chase state
+        if not isinstance(self.state, Chase):
+            self.state = Chase(self)
+    
+    def take_damage(self, amount, knockback_dir=None, knockback_stun=0.25):
+        # Keep existing knockback logic
+        super().take_damage(amount, knockback_dir, knockback_stun)
+        # Set aggro timer and force a state transition to Chase
+        self.aggro_timer = self.aggro_duration
+        self.state = Chase(self)
+        self.got_hit = True
+        
     def pick_waypoint(self):
         # Picks a random point around the spawn position to walk towards
         map_w, map_h = self.scene.camera.scene_size
@@ -90,6 +115,7 @@ class Enemy(GameCharacter):
             'pos': (self.pos.x, self.pos.y),
             'is_chasing': self.is_chasing,
             'spawn_pos': (self.spawn_pos.x, self.spawn_pos.y),
+            'hp': self.hp
         }
     
     def load_data(self, data):
@@ -112,6 +138,9 @@ class Enemy(GameCharacter):
         if 'spawn_pos' in data:
             x, y = data['spawn_pos']
             self.spawn_pos = vect(x, y)
+
+        if 'hp' in data:
+            self.hp = data['hp']
             
     def is_wall_at(self, pos):
         # Helper to check if a specific position overlaps with collision tiles or map boundaries
@@ -130,7 +159,7 @@ class Enemy(GameCharacter):
                 return True
         return False
 
-    def steer_to_direction(self, target_direction, dt, look_ahead=16, responsiveness=5.0, num_dir=8):
+    def steer_to_direction(self, target_direction, dt, look_ahead=17, responsiveness=5.0, num_dir=8):
         # Calculates 'interest' in directions towards target vs 'danger' of hitting walls/friends
         if not target_direction or target_direction.length() == 0:
             return
@@ -184,11 +213,14 @@ class Enemy(GameCharacter):
                 self.move_direction.normalize_ip()
     
     def update(self, dt):
-        # 1. Check for Death
+        # Check for Death
         if self.hp <= 0 and not isinstance(self.state, Death):
             self.state = Death(self)
 
-        # 2. Timers
+        # Timers
+        if self.aggro_timer > 0:
+            self.aggro_timer -= dt
+
         if self.invulnerable:
             self.invulnerability_timer -= dt
             if self.invulnerability_timer <= 0:
@@ -204,11 +236,17 @@ class Enemy(GameCharacter):
         if self.knockback_timer > 0:
             self.knockback_timer -= dt
 
-        # 3. State Logic
+        # State Logic
         if isinstance(self.state, Death):
             self.state.update(dt, self)
         else:
             player_direction = self.detect_player()
+            
+            # Transition to Chase if player detected or hit
+            if (player_direction or self.got_hit) and not isinstance(self.state, Chase):
+                self.got_hit = False
+                self.state = Chase(self)
+                
             new_state = self.state.enter_state(self, player_direction)
             if new_state:
                 self.state = new_state
@@ -217,40 +255,6 @@ class Enemy(GameCharacter):
             self.check_player_contact(dt)
             self.get_direction()
             self.physics(dt, self.frict)
-
-class Death:
-    def __init__(self, enemy):
-        enemy.frame_index = 0
-        # Stop all movement
-        enemy.vel = vect(0, 0)
-        enemy.accel = vect(0, 0)
-        enemy.move_direction = vect(0, 0)
-        
-        # Move to floor layer
-        enemy.z = 'blocks'
-        
-        # Disable hitboxes
-        enemy.hitbox = pygame.Rect(0,0,0,0)
-        enemy.combat_hitbox = pygame.Rect(0,0,0,0)
-        
-        self.death_anim = f'death-{enemy.get_direction()}'
-        self.despawn_timer = 7 # Linger time
-        
-    def __str__(self):
-        return "Death"
-        
-    def enter_state(self, enemy, player_direction):
-        return None
-        
-    def update(self, dt, enemy):
-        # Play animation once
-        enemy.animate(self.death_anim, 10, dt, loop=False)
-        
-        # Once at last frame, wait to despawn
-        if int(enemy.frame_index) >= len(enemy.animations[self.death_anim]) - 1:
-            self.despawn_timer -= dt
-            if self.despawn_timer <= 0:
-                enemy.kill()
 
 class EnemyIdle:
     # State when enemy is standing still
@@ -262,8 +266,6 @@ class EnemyIdle:
         return "EnemyIdle"
     
     def enter_state(self, enemy, player_direction):
-        if player_direction:
-            return Chase(enemy)
         if enemy.idle_timer <= 0:
             enemy.pick_waypoint()
             return Wander(enemy)
@@ -286,9 +288,6 @@ class Wander:
         return "Wander"
     
     def enter_state(self, enemy, player_direction):
-        if player_direction or enemy.got_hit:
-            return Chase(enemy)
-        
         if not enemy.wander_waypoint:
             enemy.pick_waypoint()
             
@@ -323,7 +322,8 @@ class Chase:
         return "Chase"
 
     def enter_state(self, enemy, player_direction):
-        if not player_direction:
+        # Only stop chasing if player is gone AND aggro timer is out
+        if not player_direction and enemy.aggro_timer <= 0:
             enemy.is_chasing = False
             return EnemyIdle(enemy)
         return None
@@ -337,3 +337,36 @@ class Chase:
 
         enemy.movement()
         enemy.animate(f'run-{enemy.get_direction()}', 15, dt)
+    
+class Death:
+    def __init__(self, enemy):
+        enemy.frame_index = 0
+        # Stop all movement
+        enemy.vel = vect(0, 0)
+        enemy.accel = vect(0, 0)
+        enemy.move_direction = vect(0, 0)
+        
+        enemy.z = 'blocks'
+        
+        # Disable hitboxes
+        enemy.hitbox = pygame.Rect(0,0,0,0)
+        enemy.combat_hitbox = pygame.Rect(0,0,0,0)
+        
+        self.death_anim = f'death-{enemy.get_direction()}'
+        self.despawn_timer = 7 # Linger time
+        
+    def __str__(self):
+        return "Death"
+        
+    def enter_state(self, enemy, player_direction):
+        return None
+        
+    def update(self, dt, enemy):
+        # Play animation once
+        enemy.animate(self.death_anim, 13, dt, loop=False)
+        
+        # Once at last frame, wait to despawn
+        if int(enemy.frame_index) >= len(enemy.animations[self.death_anim]) - 1:
+            self.despawn_timer -= dt
+            if self.despawn_timer <= 0:
+                enemy.kill()

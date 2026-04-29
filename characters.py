@@ -50,6 +50,7 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         self.invulnerable = False
         self.invulnerability_timer = 0
         self.hit_flash_timer = 0
+        self.hit_flash_color = COLORS['white']
         self.transparent_flicker_timer = 0
         self.knockback_speed = HP_CONFIG['hit_knockback']
         self.invulnerability_duration = HP_CONFIG['invulnerability_duration']

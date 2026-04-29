@@ -9,6 +9,7 @@ class Player(GameCharacter):
         self.hitbox = self.rect.copy().inflate(-self.rect.width + 9, -self.rect.height + 1) # Custom mvment hitbox for player
         self.combat_hitbox = self.rect.copy().inflate(-5, -1) # Custom for combat hitbox
         self.combat_hitbox.center = self.rect.center
+        self.hit_flash_color = COLORS['red']
         self.state = Idle(self)
         self.speed = 90
         self.throw_damage = random.randint(15, 20)
@@ -94,9 +95,14 @@ class Player(GameCharacter):
         for exit in self.scene.exit_sprites:
             if self.hitbox.colliderect(exit.rect):
                 # Retrieve destination scene and entry point from settings
-                self.scene.new_scene = SCENE_DATA[int(self.scene.current_scene)][int(exit.number)]
-                self.scene.entry_point = exit.number # ID of the door to spawn at in the next scene
-                self.scene.transition.exiting = True # Start the visual fade out
+                # Use strings for consistent lookup
+                current_scene_id = str(self.scene.current_scene)
+                exit_id = str(exit.number)
+                
+                if current_scene_id in SCENE_DATA and exit_id in SCENE_DATA[current_scene_id]:
+                    self.scene.new_scene = SCENE_DATA[current_scene_id][exit_id]
+                    self.scene.entry_point = exit_id # ID of the door to spawn at in the next scene
+                    self.scene.transition.exiting = True # Start the visual fade out
 
     def save_data(self):
           # Return player data
@@ -156,7 +162,7 @@ class Idle:
         if INPUTS['left_click']:
             return Throw(player)
 
-        if is_inputting_movement and player.vel.magnitude() > 0.5: # Any movement transition to Run class
+        if is_inputting_movement and player.vel.magnitude() > 1: # Any movement transition to Run class
             return Run(player)
 
         if INPUTS['space'] and player.tumble_charges > 0:

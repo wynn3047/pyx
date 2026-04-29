@@ -87,12 +87,13 @@ class Scene(State):
         self.game.player_data = self.player.save_data() # Save before entering
         
         # LOCAL PERSISTENCE: Save all enemies in this scene with a timestamp
-        if self.enemy_sprites:
-            enemy_states = [enemy.save_data() for enemy in self.enemy_sprites]
-            self.game.scene_states[self.current_scene] = {
-                'enemies': enemy_states,
-                'time': pygame.time.get_ticks()
-            }
+        # Only save enemies that have HP > 0 to ensure dead ones stay dead
+        enemy_states = [enemy.save_data() for enemy in self.enemy_sprites if enemy.hp > 0]
+        scene_key = str(self.current_scene)
+        self.game.scene_states[scene_key] = {
+            'enemies': enemy_states,
+            'time': pygame.time.get_ticks()
+        }
             
         Scene(self.game, self.new_scene, self.entry_point).enter_state()
     
@@ -189,7 +190,7 @@ class Scene(State):
 
 
         # Re-apply saved states to the group of enemies
-        saved_data = self.game.scene_states.get(self.current_scene)
+        saved_data = self.game.scene_states.get(str(self.current_scene))
         if saved_data:
             # Match saved data to current enemies
             for e in self.enemy_sprites: e.kill()

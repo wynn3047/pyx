@@ -25,32 +25,7 @@ class Camera(pygame.sprite.Group):
 
 
         return (cols * TILE_SIZE, rows * TILE_SIZE)
-
-    def update(self, dt, target):
-        mouse = pygame.mouse.get_pos()
-
-        # Calculate the center target offset by the player and mouse, and apply peek limit
-        target_x = target.rect.centerx - SCREEN_WIDTH / 2 - (SCREEN_WIDTH / 2 - mouse[0]) / self.peek_limit
-        target_y = target.rect.centery - SCREEN_HEIGHT / 2 - (SCREEN_HEIGHT / 2 - mouse[1]) / self.peek_limit
-
-        # Smooth camera movement panning
-        self.offset.x += (target_x - self.offset.x) * (self.delay * dt)
-        self.offset.y += (target_y - self.offset.y) * (self.delay * dt)
-
-        # Snaps if the offset is very close to 1 pixel
-        if abs(target_x - self.offset.x) < 1.1:
-            self.offset.x = target_x
-        if abs(target_y - self.offset.y) < 1.1:
-            self.offset.y = target_y
-
-        # Set camera shot for map boundary (0 for left side, and 400 for right side
-        self.offset.x = max(0, min(self.offset.x, self.scene_size[0] - SCREEN_WIDTH))
-        self.offset.y = max(0, min(self.offset.y, self.scene_size[1] - SCREEN_HEIGHT))
-
-        # We move our "visible window" to match where the camera is looking.
-        self.visible_window.x = math.floor(self.offset.x)
-        self.visible_window.y = math.floor(self.offset.y)
-    
+        
     def apply_hit_effects(self, sprite, image):
         # Red flash & transparent flicker
         image = image.copy()
@@ -58,18 +33,19 @@ class Camera(pygame.sprite.Group):
         # Check if this is the player and they are at low HP
         from player import Player
         is_player_low_hp = isinstance(sprite, Player) and sprite.is_low_hp
-
         if hasattr(sprite, 'hit_flash_timer') and sprite.hit_flash_timer > 0:
-            # Create red overlay
-            red_surf = pygame.Surface(image.get_size())
-            red_surf.fill(COLORS['red'])
-            
-            # Normal hit flash is 128 alpha, but if low hp more intense
-            alpha = 180 if is_player_low_hp else 128
-            red_surf.set_alpha(alpha)
+            # Create color overlay
+            overlay_color = getattr(sprite, 'hit_flash_color', COLORS['white'])
 
-            # Apply as mask only where pixels exist
-            image.blit(red_surf, (0, 0), special_flags=pygame.BLEND_MULT)
+            # Use a mask to create a solid-color silhouette of the sprite
+            mask = pygame.mask.from_surface(image)
+            # to_surface creates a new surface where the mask is 'setcolor' and empty space is 'unsetcolor'
+            flash_surf = mask.to_surface(setcolor=overlay_color, unsetcolor=(0, 0, 0, 0))
+
+            alpha = 180 if is_player_low_hp else 128
+            flash_surf.set_alpha(alpha)
+
+            image.blit(flash_surf, (0, 0))
             return image
         
         if hasattr(sprite, 'invulnerable') and sprite.invulnerable and hasattr(sprite, 'transparent_flicker_timer'):
@@ -152,7 +128,32 @@ class Camera(pygame.sprite.Group):
             temp_combat = sprite.combat_hitbox.copy()
             temp_combat.topleft -= offset
             pygame.draw.rect(screen, combat_color, temp_combat, 1)
-            
+    
+    def update(self, dt, target):
+        mouse = pygame.mouse.get_pos()
+
+        # Calculate the center target offset by the player and mouse, and apply peek limit
+        target_x = target.rect.centerx - SCREEN_WIDTH / 2 - (SCREEN_WIDTH / 2 - mouse[0]) / self.peek_limit
+        target_y = target.rect.centery - SCREEN_HEIGHT / 2 - (SCREEN_HEIGHT / 2 - mouse[1]) / self.peek_limit
+
+        # Smooth camera movement panning
+        self.offset.x += (target_x - self.offset.x) * (self.delay * dt)
+        self.offset.y += (target_y - self.offset.y) * (self.delay * dt)
+
+        # Snaps if the offset is very close to 1 pixel
+        if abs(target_x - self.offset.x) < 1.1:
+            self.offset.x = target_x
+        if abs(target_y - self.offset.y) < 1.1:
+            self.offset.y = target_y
+
+        # Set camera shot for map boundary (0 for left side, and 400 for right side
+        self.offset.x = max(0, min(self.offset.x, self.scene_size[0] - SCREEN_WIDTH))
+        self.offset.y = max(0, min(self.offset.y, self.scene_size[1] - SCREEN_HEIGHT))
+
+        # We move our "visible window" to match where the camera is looking.
+        self.visible_window.x = math.floor(self.offset.x)
+        self.visible_window.y = math.floor(self.offset.y)
+         
     def draw(self, screen, group, scene):
         screen.fill((COLORS['medium_navy']))
         draw_offset = vect(math.floor(self.offset.x), math.floor(self.offset.y))
