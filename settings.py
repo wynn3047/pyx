@@ -39,7 +39,7 @@ COLORS = {
 }
 
 HP_CONFIG = {
-    'player_max_hp': 150,
+    'player_max_hp': 200,
     'player_hp_regen': 6,
     'player_regen_delay': 7, # Regen delay after hit
     'invulnerability_duration': 0.67, # For invicibility frames
@@ -57,13 +57,13 @@ HEART_CONFIG = {
     'ui_offset_y': 10,            
 }
 DEATH_SEQUENCE_CONFIG = {
-    'slowdown_duration': 0.5,
-    'slowdown_multiplier': 0.2,
+    'slowdown_duration': 3,
+    'slowdown_multiplier': 0.4,
     'bw_filter_duration': 0.8,
     'pause_duration': 1.2,
     'fade_color': COLORS['medium_navy'],
     'message_color': COLORS['red'],
-    'button_color_active': COLORS['green'],
+    'button_color_active': COLORS['white'],
     'button_color_inactive': COLORS['charcoal_grey']
 }
 

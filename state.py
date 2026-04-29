@@ -39,7 +39,7 @@ class SplashScreen(State):
 
     def draw(self, screen):
         screen.fill((COLORS['charcoal_grey']))
-        self.game.render_text('PyX', COLORS['white'], self.game.head_font, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        self.game.render_text('PyX', COLORS['white'], HEAD_FONT, 32, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
 
 # After
 class Scene(State):
@@ -73,8 +73,11 @@ class Scene(State):
         self.death_slowdown_dt = 1.0 # Multiplier for dt during slowmo
         
         # Buttons for death sequence
-        self.restart_button_rect = None
-        self.exit_button_rect = None
+        self.restart_button_rect = pygame.Rect(0, 0, 80, 20)
+        self.restart_button_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 20)
+        
+        self.exit_button_rect = pygame.Rect(0, 0, 80, 20)
+        self.exit_button_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 45)
         
         # Load heart sprite
         self.heart_sprite = pygame.image.load('assets/ui/heart.png').convert_alpha()
@@ -226,23 +229,115 @@ class Scene(State):
         self.death_phase = 'slowdown'
         self.death_timer = DEATH_SEQUENCE_CONFIG['slowdown_duration']
         self.death_message = random.choice(DEATH_MESSAGES)
+        self.death_slowdown_dt = DEATH_SEQUENCE_CONFIG['slowdown_multiplier'] # Start slowmo instantly
+    
+    def update_death_sequence(self, dt):
+        if self.death_phase == 'slowdown':
+            self.death_timer -= dt
+            # Gradually slow down time
+            progress = max(0, self.death_timer / DEATH_SEQUENCE_CONFIG['slowdown_duration'])
+            self.death_slowdown_dt = max(DEATH_SEQUENCE_CONFIG['slowdown_multiplier'], progress)
+            
+            if self.death_timer <= 0:
+                self.death_phase = 'paused'
+                self.death_timer = DEATH_SEQUENCE_CONFIG['pause_duration']
+                # Reset inputs to prevent accidental clicks
+                self.game.reset_inputs()
+
+        elif self.death_phase == 'paused':
+            # Menu buttons and hover logic
+            mouse_pos = pygame.mouse.get_pos()
+            
+            # Interaction
+            if self.restart_button_rect.collidepoint(mouse_pos):
+                if INPUTS['left_click']:
+                    # Restart to Scene 0
+                    self.game.player_data = {} # Reset player stats
+                    self.game.scene_states = {} # Clear room persistence
+                    Scene(self.game, '0', '0').enter_state()
+            
+            if self.exit_button_rect.collidepoint(mouse_pos):
+                if INPUTS['left_click']:
+                    # Exit to Splash
+                    self.game.states = [self.game.splash_screen]
+    
+    def draw_death_menu(self, screen):
+        # Dim background further
+        dim_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        dim_surf.fill((0, 0, 0))
+        dim_surf.set_alpha(150)
+        screen.blit(dim_surf, (0, 0))
+
+        # Death Message
+        self.game.render_text(self.death_message, DEATH_SEQUENCE_CONFIG['message_color'], HEAD_FONT, 24, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 30))
+
+        mouse_pos = pygame.mouse.get_pos()
+
+        # Restart Button
+        restart_color = DEATH_SEQUENCE_CONFIG['button_color_active'] if self.restart_button_rect.collidepoint(mouse_pos) else DEATH_SEQUENCE_CONFIG['button_color_inactive']
+        restart_text_color = COLORS['black'] if self.restart_button_rect.collidepoint(mouse_pos) else COLORS['white']
+        pygame.draw.rect(screen, restart_color, self.restart_button_rect, border_radius=3)
+        self.game.render_text('RESTART', restart_text_color, PRIMARY_FONT, 10, self.restart_button_rect.center)
+
+        # Exit Button
+        exit_color = DEATH_SEQUENCE_CONFIG['button_color_active'] if self.exit_button_rect.collidepoint(mouse_pos) else DEATH_SEQUENCE_CONFIG['button_color_inactive']
+        exit_text_color = COLORS['black'] if self.exit_button_rect.collidepoint(mouse_pos) else COLORS['white']
+        pygame.draw.rect(screen, exit_color, self.exit_button_rect, border_radius=3)
+        self.game.render_text('EXIT', COLORS['white'], PRIMARY_FONT, 10, self.exit_button_rect.center)
+    
+    def apply_grayscale_bleed(self, screen, amount):
+        # Capture the screen, grayscale it, and blit with alpha
+        temp_surf = screen.copy()
         
+        # Fast Grayscale using RGB weighting
+        array = pygame.surfarray.pixels3d(temp_surf)
+        weights = pygame.Vector3(0.299, 0.587, 0.114)
+        gray = (array * weights).sum(axis=2)
+        array[:, :, 0] = gray
+        array[:, :, 1] = gray
+        array[:, :, 2] = gray
+        del array 
+        
+        temp_surf.set_alpha(int(255 * amount))
+        screen.blit(temp_surf, (0, 0))
+
     def debugger(self, debug_list):
         # For ingame debugging visualization (displays accel, vel, etc.)
         for index, name in enumerate(debug_list):
-            self.game.render_text(name, COLORS['white'], self.game.primary_font, (10, 15 * (index + 1)), False)
+            self.game.render_text(name, COLORS['white'], PRIMARY_FONT, 10, (10, 15 * (index + 1)), False)
 
     def update(self, dt):
-        self.update_sprites.update(dt) # Update all character logic (player movement, etc.)
-        if self.player:
-            self.camera.update(dt, self.player) # figure out where the player moved.
+        # Apply slow-motion multiplier if in death sequence
+        effective_dt = dt * self.death_slowdown_dt
         
-        self.transition.update(dt)
-        
+        # Trigger death sequence effects immediately
+        if self.is_dead:
+            self.update_death_sequence(dt)
+
+        if not self.is_dead or self.death_phase == 'slowdown':
+            self.update_sprites.update(effective_dt)
+            if self.player:
+                self.camera.update(effective_dt, self.player)
+            self.transition.update(dt)
+
+
     def draw(self, screen):
-        # Instead of drawing sprites normally, we let the CAMERA do it.
-        # It takes all our draw_sprites and only draws the ones on screen
         self.camera.draw(screen, self.draw_sprites, self)
+        
+        if self.is_dead:
+            # Calculate bleed amount based on phase/timer
+            if self.death_phase == 'slowdown':
+                bleed_progress = 1.0 - (self.death_timer / DEATH_SEQUENCE_CONFIG['slowdown_duration'])
+            else:
+                bleed_progress = 1.0 # Full grayscale
+            
+            if bleed_progress > 0.05:
+                self.apply_grayscale_bleed(screen, bleed_progress)
+
+            # Draw Menu if Paused
+            if self.death_phase == 'paused':
+                self.draw_death_menu(screen)
+
         self.transition.draw(screen)
                 
         #  Debugger
@@ -260,6 +355,9 @@ class Scene(State):
                 str(f'Death Phase: {self.death_phase}'),
                 str(f'Time: {round(pygame.time.get_ticks() / 1000, 1)}')
             ])
+
+    
+    
             
             
                 

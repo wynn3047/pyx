@@ -30,7 +30,7 @@ class Enemy(GameCharacter):
         
         # Aggro / Memory
         self.aggro_timer = 0
-        self.aggro_duration = 5.0 # Stay aggroed for 5s after hit or detection
+        self.aggro_duration = 4 # Stay aggroed for 4s after hit or detection
         
         self.spawn_pos = vect(pos)
         self.state = EnemyIdle(self)  # Initial AI state
@@ -149,8 +149,8 @@ class Enemy(GameCharacter):
         
         # 1. Check Map Boundaries
         map_w, map_h = self.scene.camera.scene_size
-        if temp_rect.left < 0 or temp_rect.right > map_w or \
-           temp_rect.top < 0 or temp_rect.bottom > map_h:
+        if (temp_rect.left < 0 or temp_rect.right > map_w or
+           temp_rect.top < 0 or temp_rect.bottom > map_h):
             return True
 
         # 2. Check Collision Tiles
@@ -247,7 +247,7 @@ class Enemy(GameCharacter):
                 self.got_hit = False
                 self.state = Chase(self)
                 
-            new_state = self.state.enter_state(self, player_direction)
+            new_state = self.state.enter_state(self)
             if new_state:
                 self.state = new_state
             
@@ -265,7 +265,7 @@ class EnemyIdle:
     def __str__(self):
         return "EnemyIdle"
     
-    def enter_state(self, enemy, player_direction):
+    def enter_state(self, enemy):
         if enemy.idle_timer <= 0:
             enemy.pick_waypoint()
             return Wander(enemy)
@@ -287,7 +287,7 @@ class Wander:
     def __str__(self):
         return "Wander"
     
-    def enter_state(self, enemy, player_direction):
+    def enter_state(self, enemy):
         if not enemy.wander_waypoint:
             enemy.pick_waypoint()
             
@@ -317,14 +317,14 @@ class Chase:
         enemy.frame_index = 0
         enemy.is_chasing = True
         enemy.speed = 30
-        enemy.force = 2500
+        enemy.force = 2250
         
     def __str__(self):
         return "Chase"
 
-    def enter_state(self, enemy, player_direction):
+    def enter_state(self, enemy):
         # Only stop chasing if player is gone AND aggro timer is out
-        if not player_direction and enemy.aggro_timer <= 0:
+        if enemy.aggro_timer <= 0:
             enemy.is_chasing = False
             return EnemyIdle(enemy)
         return None
@@ -359,7 +359,7 @@ class Death:
     def __str__(self):
         return "Death"
         
-    def enter_state(self, enemy, player_direction):
+    def enter_state(self, enemy):
         return None
         
     def update(self, dt, enemy):

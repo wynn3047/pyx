@@ -16,8 +16,10 @@ class Game:
             self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), self.screen_flags)
 
         pygame.display.set_caption("PyX")
-        self.head_font = pygame.font.Font(HEAD_FONT, TILE_SIZE)
-        self.primary_font = pygame.font.Font(PRIMARY_FONT, 10)
+        
+        # Font caching
+        self.fonts = {} 
+        
         self.running = True
         self.fps = 60  
 
@@ -117,8 +119,16 @@ class Game:
         for key in INPUTS:
             INPUTS[key] = False
 
-    # Text rendering on screen
-    def render_text(self, text, color, font, pos, centralized=True):
+    # Dynamic text rendering with font caching
+    def render_text(self, text, color, font_path, size, pos, centralized=True):
+        # Create a unique key for the font/size combination
+        font_key = f"{font_path}"
+        
+        # Load and cache the font if it doesn't exist
+        if font_key not in self.fonts:
+            self.fonts[font_key] = pygame.font.Font(font_path, size)
+            
+        font = self.fonts[font_key]
         text_surf = font.render(str(text), False, color)
         text_rect = text_surf.get_rect(center=pos) if centralized else text_surf.get_rect(topleft=pos)
         self.screen.blit(text_surf, text_rect)

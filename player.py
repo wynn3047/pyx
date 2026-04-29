@@ -30,7 +30,6 @@ class Player(GameCharacter):
         
         self.throw_vel = 600
         self.throw_rate = 16.5
-        self.last_click = None
         
     @property
     def is_low_hp(self):
@@ -145,7 +144,7 @@ class Player(GameCharacter):
         self.update_regen(dt)
         
         if INPUTS['backspace']:
-            self.take_damage(10)
+            self.take_damage(150)
             
 class Idle:     
     def __init__(self, player):
@@ -203,6 +202,7 @@ class Throw:
     def __init__(self, player):
         player.frame_index = 0
         self.spawned = False
+        player.regen_delay_timer = HP_CONFIG['player_regen_delay'] 
         # Randomize which throw animation to use
         self.rand_anim = random.choice(['throw2', 'throw3'])
 
@@ -229,6 +229,9 @@ class Throw:
         # Once animation finishes, return to idle
         if int(player.frame_index) >= len(player.animations[f'{self.rand_anim}-{player.get_direction()}']) - 1:
             return Idle(player)
+        
+        if INPUTS['space'] and player.tumble_charges > 0:
+            return Tumble(player)
         return None
 
     def update(self, dt, player):
@@ -305,6 +308,9 @@ class Death:
         player.accel = vect(0, 0)
         player.move_direction = vect(0, 0)
         self.anim_name = f'death-{player.get_direction()}'
+        # Disable hitboxes
+        player.hitbox = pygame.Rect(0,0,0,0)
+        player.combat_hitbox = pygame.Rect(0,0,0,0)
         
     def __str__(self):
         return "Death"
