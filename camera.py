@@ -14,6 +14,10 @@ class Camera(pygame.sprite.Group):
         self.delay = 5
         self.peek_limit = 3
 
+        # Stealth UI Assets
+        self.stealth_frame = pygame.image.load(STEALTH_CONFIG['frame_path']).convert_alpha()
+        self.stealth_fill = pygame.image.load(STEALTH_CONFIG['fill_path']).convert_alpha()
+
     # Capturing screen size for tilemap
     def get_scene_size(self, scene):
         # Open current scene's CSV to get its dimensions
@@ -101,6 +105,39 @@ class Camera(pygame.sprite.Group):
                         screen.blit(scaled_heart, (x + offset_x, y + offset_y))
 
 
+    def draw_stealth_bar(self, screen, player):
+        if not player: return
+        
+        # Position: Center-left
+        frame_h = self.stealth_frame.get_height()
+        pos_x = 375
+        pos_y = (SCREEN_HEIGHT - frame_h) // 2
+        
+        screen.blit(self.stealth_frame, (pos_x, pos_y))
+        
+        ratio = player.stealth / player.max_stealth
+        if ratio > 0:
+            fill_image = self.stealth_fill.copy()
+            full_w, full_h = fill_image.get_size()
+            
+            padding = 9
+            usable_h = full_h - (padding * 2)
+            
+            # Pulse when full
+            if player.is_stealth_ready:
+                fill_image.fill(COLORS['light_pink'], special_flags=pygame.BLEND_RGB_MULT)
+
+                pulse = (math.sin(pygame.time.get_ticks() * 0.02) + 1) / 2 # 0 to 1
+                alpha = 150 + int(105 * pulse) # 150 to 255
+                fill_image.set_alpha(alpha)
+            
+            current_fill_h = int(usable_h * ratio)
+            
+            clip_rect = pygame.Rect(0, (full_h - padding) - current_fill_h, full_w, current_fill_h)
+            
+            # Align the slice cuz my image has 9px margin
+            screen.blit(fill_image, (pos_x, pos_y + (full_h - padding - current_fill_h)), area=clip_rect)
+
     def show_hitbox(self, screen, sprite, offset):
         # Visual hitbox
         from player import Player
@@ -181,6 +218,7 @@ class Camera(pygame.sprite.Group):
                         self.show_hitbox(screen, sprite, draw_offset)
         
         self.draw_hearts(screen, scene)
+        self.draw_stealth_bar(screen, scene.player)
 
         # Full-screen red flash if player is hit while at low HP (<= 50%)
         if scene.player and scene.player.is_low_hp and scene.player.hit_flash_timer > 0:

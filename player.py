@@ -28,9 +28,9 @@ class Player(GameCharacter):
         self.hp_regen = HP_CONFIG['player_hp_regen']
         self.knockback_speed = 250
         
-        self.throw_vel = 600
+        self.throw_vel = 400
         self.throw_rate = 16.5 # Default 16.5
-        self.throw_damage = random.randint(1, 5)
+        self.throw_damage = random.uniform(10, 20)
 
         # Combat Upgrades
         self.proj_pierce = PLAYER_COMBAT_CONFIG['proj_pierce_count']
@@ -39,10 +39,22 @@ class Player(GameCharacter):
         self.proj_burst_count = PLAYER_COMBAT_CONFIG['proj_burst_count']
         self.proj_burst_delay = PLAYER_COMBAT_CONFIG['proj_burst_delay']
         self.proj_ricochet = PLAYER_COMBAT_CONFIG['proj_ricochet_count']
+        
+        # Stealth System
+        self.stealth = 0
+        self.max_stealth = STEALTH_CONFIG['max_stealth']
+        self.is_stealth_ready = False
 
     @property
     def is_low_hp(self):
         return self.hp <= (self.max_hp / 2)
+
+    def update_stealth(self, dt):
+        # Stealth fills faster when standing still
+        regen = STEALTH_CONFIG['stealth_regen']
+            
+        self.stealth = min(self.max_stealth, self.stealth + regen * dt)
+        self.is_stealth_ready = (self.stealth >= self.max_stealth)
 
     def take_damage(self, amount, knockback_dir=None, knockback_force=None, knockback_stun=0.3):
         super().take_damage(amount, knockback_dir, knockback_force, knockback_stun)
@@ -118,7 +130,13 @@ class Player(GameCharacter):
             'hp': self.hp,
             'tumble_charges': self.tumble_charges,
             'tumble_cooldown_timer': self.tumble_cooldown_timer,
-            'regen_delay_timer': self.regen_delay_timer
+            'regen_delay_timer': self.regen_delay_timer,
+            'stealth': self.stealth,
+            'proj_count': self.proj_count,
+            'proj_pierce': self.proj_pierce,
+            'proj_ricochet': self.proj_ricochet,
+            'proj_spread': self.proj_spread,
+            'proj_burst_count': self.proj_burst_count
         }
     
     def load_data(self, data):
@@ -130,10 +148,31 @@ class Player(GameCharacter):
         self.tumble_charges = data.get('tumble_charges', self.tumble_charges)
         self.tumble_cooldown_timer = data.get('tumble_cooldown_timer', self.tumble_cooldown_timer)
         self.regen_delay_timer = data.get('regen_delay_timer', self.regen_delay_timer)
+        self.stealth = data.get('stealth', 0)
+        self.proj_count = data.get('proj_count', self.proj_count)
+        self.proj_pierce = data.get('proj_pierce', self.proj_pierce)
+        self.proj_ricochet = data.get('proj_ricochet', self.proj_ricochet)
+        self.proj_spread = data.get('proj_spread', self.proj_spread)
+        self.proj_burst_count = data.get('proj_burst_count', self.proj_burst_count)
 
-    def fire_projectile_shot(self, target_world_pos):
+    def fire_projectile_shot(self, target_world_pos, is_stealth_strike=False):
         from projectiles import Projectile
         
+        # Base stats
+        damage = self.throw_damage
+        speed = self.throw_vel
+        count = self.proj_count
+        pierce = self.proj_pierce
+        ricochet = self.proj_ricochet
+        
+        # Apply Stealth Strike Multipliers
+        if is_stealth_strike:
+            damage *= STEALTH_CONFIG['damage_mult']
+            speed *= STEALTH_CONFIG['velocity_mult']
+            count += STEALTH_CONFIG['count_add']
+            pierce += STEALTH_CONFIG['pierce_add']
+            ricochet += STEALTH_CONFIG['ricochet_add']
+
         # Base direction to target
         base_direction = (target_world_pos - self.pos)
         if base_direction.length() > 0:
@@ -144,10 +183,10 @@ class Player(GameCharacter):
         base_angle = math.degrees(math.atan2(base_direction.y, base_direction.x))
         
         # Calculate spread angles
-        if self.proj_count > 1 and self.proj_spread > 0:
-            angle_step = self.proj_spread / (self.proj_count - 1)
+        if count > 1 and self.proj_spread > 0:
+            angle_step = self.proj_spread / (count - 1)
             start_angle = base_angle - self.proj_spread / 2
-            angles = [start_angle + i * angle_step for i in range(self.proj_count)]
+            angles = [start_angle + i * angle_step for i in range(count)]
         else:
             angles = [base_angle]
             
@@ -159,11 +198,11 @@ class Player(GameCharacter):
                 [self.scene.update_sprites, self.scene.draw_sprites],
                 self.pos,
                 direction,
-                speed=self.throw_vel,
-                damage=self.throw_damage,
+                speed=speed,
+                damage=damage,
                 knockback_force=HP_CONFIG['player_dagger_knockback'],
-                pierce_count=self.proj_pierce,
-                ricochet_count=self.proj_ricochet,
+                pierce_count=pierce,
+                ricochet_count=ricochet,
                 sprite_path='assets\characters\player\weapon\dagger.png'
             )
 
@@ -177,6 +216,7 @@ class Player(GameCharacter):
 
         super().update(dt)
         self.exit_scene()
+        self.update_stealth(dt)
         
         # Recharge tumble during Run/Idle not on Tumble
         if self.tumble_charges < self.tumble_max_charges and not isinstance(self.state, Tumble):
@@ -248,8 +288,14 @@ class Throw:
     def __init__(self, player):
         player.frame_index = 0
         player.regen_delay_timer = HP_CONFIG['player_regen_delay'] 
-        # Randomize which throw animation to use
-        self.rand_anim = random.choice(['throw2', 'throw3'])
+        
+        # Stealth Strike detection
+        self.is_stealth_strike = player.is_stealth_ready
+        if self.is_stealth_strike:
+            self.rand_anim = 'throw1' # Force stealth animation
+        else:
+            # Randomize normal throw
+            self.rand_anim = random.choice(['throw2', 'throw3'])
 
         # Burst logic
         self.bursts_left = player.proj_burst_count
@@ -296,9 +342,15 @@ class Throw:
             
         if self.started_firing and self.bursts_left > 0:
             if self.burst_timer <= 0:
-                player.fire_projectile_shot(self.target_world_pos)
+                player.fire_projectile_shot(self.target_world_pos, self.is_stealth_strike)
                 self.bursts_left -= 1
                 self.burst_timer = player.proj_burst_delay
+                
+                # Consume Stealth
+                if self.is_stealth_strike:
+                    player.stealth = 0 # Full reset for strike
+                else:
+                    player.stealth = max(0, player.stealth - STEALTH_CONFIG['attack_consumption'])
             else:
                 self.burst_timer -= dt
 

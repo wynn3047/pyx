@@ -35,6 +35,7 @@ COLORS = {
     'blue' : (69,78,99),
     'charcoal_grey': (24, 29, 35),
     'medium_navy': (19,21,32),
+    'light_pink': (249, 159, 255)
     
 }
 
@@ -52,13 +53,29 @@ HP_CONFIG = {
 }
 
 PLAYER_COMBAT_CONFIG = {
-    'proj_pierce_count': 0,      # 0 = hits one enemy then dies
-    'proj_count': 1,             # Number of projectiles per shot
-    'proj_spread_angle': 10,     # Arc in degrees for spread shots
-    'proj_burst_count': 1,       # Consecutive shots per attack
-    'proj_burst_delay': 0.05,     # Delay between consecutive shots
-    'proj_ricochet_count': 0     # Number of bounces off walls
+    'proj_pierce_count': 0,      
+    'proj_count': 1,             
+    'proj_spread_angle': 30,     
+    'proj_burst_count': 2,       
+    'proj_burst_delay': 0.1,     
+    'proj_ricochet_count': 0     
     }
+
+STEALTH_CONFIG = {
+    'max_stealth': 100.0,
+    'stealth_regen': 20.0,         # Per second
+    'attack_consumption': 25.0, # Normal attack reduction
+
+    # Stealth Strike Multipliers
+    'damage_mult': 2.3,
+    'velocity_mult': 1.4,
+    'count_add': 2,            
+    'pierce_add': 1,
+    'ricochet_add': 0,
+
+    'frame_path': 'assets/ui/stealth_bar_frame.png',
+    'fill_path': 'assets/ui/stealth_bar_fill.png'
+}
 
 HEART_CONFIG = {            
     'hp_per_heart': 50,                 

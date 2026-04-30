@@ -53,14 +53,13 @@ class Projectile(pygame.sprite.Sprite):
         if self.ricochet_count > 0:
             self.ricochet_count -= 1
             
-            # Determine bounce axis
             # Calculate overlap
             overlap_x = min(self.hitbox.right, wall.hitbox.right) - max(self.hitbox.left, wall.hitbox.left)
             overlap_y = min(self.hitbox.bottom, wall.hitbox.bottom) - max(self.hitbox.top, wall.hitbox.top)
             
             # Robust corner detection: if overlaps are very close, it's likely a corner hit
             # and we should flip both axes.
-            if abs(overlap_x - overlap_y) < 2:
+            if abs(overlap_x - overlap_y) < 1:
                 self.direction.x *= -1
                 self.direction.y *= -1
                 # Nudge out of both axes
