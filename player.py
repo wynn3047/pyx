@@ -1,5 +1,6 @@
 import pygame
 import random
+import math
 from settings import *
 from characters import GameCharacter
 
@@ -11,13 +12,12 @@ class Player(GameCharacter):
         self.combat_hitbox.center = self.rect.center
         self.hit_flash_color = COLORS['red']
         self.state = Idle(self)
-        self.speed = 90
-        self.throw_damage = random.randint(15, 20)
+        self.speed = 80
         
         # Tumble cooldown and usage
         self.tumble_charges = 2
         self.tumble_max_charges = 2
-        self.tumble_cooldown = 1.1
+        self.tumble_cooldown = 1.5
         self.tumble_cooldown_timer = 0
         self.tumble_speed = 400
         # Player HP & Invincibility
@@ -29,14 +29,22 @@ class Player(GameCharacter):
         self.knockback_speed = 250
         
         self.throw_vel = 600
-        self.throw_rate = 16.5
-        
+        self.throw_rate = 16.5 # Default 16.5
+        self.throw_damage = random.randint(15, 20)
+
+        # Combat Upgrades
+        self.proj_pierce = PLAYER_COMBAT_CONFIG['proj_pierce_count']
+        self.proj_count = PLAYER_COMBAT_CONFIG['proj_count']
+        self.proj_spread = PLAYER_COMBAT_CONFIG['proj_spread_angle']
+        self.proj_burst_count = PLAYER_COMBAT_CONFIG['proj_burst_count']
+        self.proj_burst_delay = PLAYER_COMBAT_CONFIG['proj_burst_delay']
+
     @property
     def is_low_hp(self):
         return self.hp <= (self.max_hp / 2)
 
-    def take_damage(self, amount, knockback_dir=None, knockback_stun=0.25):
-        super().take_damage(amount, knockback_dir, knockback_stun)
+    def take_damage(self, amount, knockback_dir=None, knockback_force=None, knockback_stun=0.3):
+        super().take_damage(amount, knockback_dir, knockback_force, knockback_stun)
         self.regen_delay_timer = HP_CONFIG['player_regen_delay'] 
 
     def update_regen(self, dt):
@@ -122,6 +130,41 @@ class Player(GameCharacter):
         self.tumble_cooldown_timer = data.get('tumble_cooldown_timer', self.tumble_cooldown_timer)
         self.regen_delay_timer = data.get('regen_delay_timer', self.regen_delay_timer)
 
+    def fire_projectile_shot(self, target_world_pos):
+        from projectiles import Projectile
+        
+        # Base direction to target
+        base_direction = (target_world_pos - self.pos)
+        if base_direction.length() > 0:
+            base_direction = base_direction.normalize()
+        else:
+            base_direction = vect(1, 0)
+            
+        base_angle = math.degrees(math.atan2(base_direction.y, base_direction.x))
+        
+        # Calculate spread angles
+        if self.proj_count > 1 and self.proj_spread > 0:
+            angle_step = self.proj_spread / (self.proj_count - 1)
+            start_angle = base_angle - self.proj_spread / 2
+            angles = [start_angle + i * angle_step for i in range(self.proj_count)]
+        else:
+            angles = [base_angle]
+            
+        # Spawn projectiles
+        for angle in angles:
+            direction = vect(1, 0).rotate(angle)
+            Projectile(
+                self.scene,
+                [self.scene.update_sprites, self.scene.draw_sprites],
+                self.pos,
+                direction,
+                speed=self.throw_vel,
+                damage=self.throw_damage,
+                knockback_force=HP_CONFIG['player_dagger_knockback'],
+                pierce_count=self.proj_pierce,
+                sprite_path='assets\characters\player\weapon\dagger.png'
+            )
+
     def update(self, dt):
         if self.hp <= 0:
             if not isinstance(self.state, Death):
@@ -144,7 +187,8 @@ class Player(GameCharacter):
         self.update_regen(dt)
         
         if INPUTS['backspace']:
-            self.take_damage(150)
+            self.take_damage(150, vect(0,0), 0)
+            self.proj_count -= 1
             
 class Idle:     
     def __init__(self, player):
@@ -201,10 +245,14 @@ class Run:
 class Throw:
     def __init__(self, player):
         player.frame_index = 0
-        self.spawned = False
         player.regen_delay_timer = HP_CONFIG['player_regen_delay'] 
         # Randomize which throw animation to use
         self.rand_anim = random.choice(['throw2', 'throw3'])
+
+        # Burst logic
+        self.bursts_left = player.proj_burst_count
+        self.burst_timer = 0
+        self.started_firing = False
 
         # Capture target position at the moment of the click
         mouse_pos = vect(pygame.mouse.get_pos())
@@ -226,8 +274,11 @@ class Throw:
         return "Throw"
 
     def enter_state(self, player):
-        # Once animation finishes, return to idle
-        if int(player.frame_index) >= len(player.animations[f'{self.rand_anim}-{player.get_direction()}']) - 1:
+        # Once animation finishes AND all bursts are fired, return to idle
+        anim_finished = int(player.frame_index) >= len(player.animations[f'{self.rand_anim}-{player.get_direction()}']) - 1
+        burst_finished = self.bursts_left <= 0
+        
+        if anim_finished and burst_finished:
             return Idle(player)
         
         if INPUTS['space'] and player.tumble_charges > 0:
@@ -237,35 +288,21 @@ class Throw:
     def update(self, dt, player):
         player.animate(f'{self.rand_anim}-{player.get_direction()}', player.throw_rate, dt, False)
 
-        # Spawn projectile at the "release" frame (mine is 4)
-
-        if int(player.frame_index) == 4 and not self.spawned:
-            self.spawn_dagger(player)
-            self.spawned = True
+        # Handle Burst Firing
+        if int(player.frame_index) >= 4:
+            self.started_firing = True
+            
+        if self.started_firing and self.bursts_left > 0:
+            if self.burst_timer <= 0:
+                player.fire_projectile_shot(self.target_world_pos)
+                self.bursts_left -= 1
+                self.burst_timer = player.proj_burst_delay
+            else:
+                self.burst_timer -= dt
 
         GameCharacter.movement(player) 
         player.physics(dt, player.frict)
 
-
-    def spawn_dagger(self, player):
-        from projectiles import Projectile
-        # Use the captured target world position from the start of the throw
-        direction = (self.target_world_pos - player.pos)
-        if direction.length() > 0:
-            direction = direction.normalize()
-        else:
-            direction = vect(1, 0) # Fallback to right
-            
-        # Spawn the dagger
-        Projectile(
-            player.scene,
-            [player.scene.update_sprites, player.scene.draw_sprites],
-            player.pos,
-            direction,
-            speed=player.throw_vel,
-            damage=player.throw_damage,
-            sprite_path='assets\characters\player\weapon\dagger.png'
-        )
 
 class Tumble:
     def __init__(self, player):

@@ -44,9 +44,19 @@ HP_CONFIG = {
     'player_regen_delay': 7, # Regen delay after hit
     'invulnerability_duration': 0.67, # For invicibility frames
     'hit_flash_duration': 0.1,
-    'hit_knockback': 80,
+    'hit_knockback': 80, # Default fallback
+    'enemy_contact_knockback': 120,
+    'player_dagger_knockback': 50,
     'transparency_alpha': 100,
     'flicker_interval': 0.08,     
+}
+
+PLAYER_COMBAT_CONFIG = {
+    'proj_pierce_count': 0,      # 0 = hits one enemy then dies
+    'proj_count': 2,             # Number of projectiles per shot
+    'proj_spread_angle': 10,     # Arc in degrees for spread shots
+    'proj_burst_count': 1,       # Consecutive shots per attack
+    'proj_burst_delay': 0.05 # Delay between consecutive shots
 }
 
 HEART_CONFIG = {            

@@ -178,7 +178,7 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         if new_state: self.state = new_state
         else: self.state
 
-    def take_damage(self, amount, knockback_dir=None, knockback_stun=0.25):
+    def take_damage(self, amount, knockback_dir=None, knockback_force=None, knockback_stun=0.25):
         if self.invulnerable: 
             return # Don't take damage
         
@@ -200,7 +200,9 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         if knockback_dir.length() > 0:
             knockback_dir.normalize_ip()
         
-        self.vel += knockback_dir * self.knockback_speed
+        # Use provided force or fallback to character default
+        force = knockback_force if knockback_force is not None else self.knockback_speed
+        self.vel += knockback_dir * force
 
     def update(self, dt):
         if self.knockback_timer > 0:

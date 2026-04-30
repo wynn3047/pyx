@@ -283,7 +283,7 @@ class Scene(State):
         exit_color = DEATH_SEQUENCE_CONFIG['button_color_active'] if self.exit_button_rect.collidepoint(mouse_pos) else DEATH_SEQUENCE_CONFIG['button_color_inactive']
         exit_text_color = COLORS['black'] if self.exit_button_rect.collidepoint(mouse_pos) else COLORS['white']
         pygame.draw.rect(screen, exit_color, self.exit_button_rect, border_radius=3)
-        self.game.render_text('EXIT', COLORS['white'], PRIMARY_FONT, 10, self.exit_button_rect.center)
+        self.game.render_text('EXIT', exit_text_color, PRIMARY_FONT, 10, self.exit_button_rect.center)
     
     def apply_grayscale_bleed(self, screen, amount):
         # Capture the screen, grayscale it, and blit with alpha

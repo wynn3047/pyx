@@ -33,6 +33,7 @@ class Enemy(GameCharacter):
         self.aggro_duration = 4 # Stay aggroed for 4s after hit or detection
         
         self.spawn_pos = vect(pos)
+        self.contact_knockback = HP_CONFIG['enemy_contact_knockback']
         self.state = EnemyIdle(self)  # Initial AI state
         self.frict = 10 
         self.knockback_speed = 50
@@ -106,7 +107,7 @@ class Enemy(GameCharacter):
             hit_direction = (self.scene.player.pos - self.pos)
             if hit_direction.length() > 0:
                 hit_direction.normalize_ip()  
-            self.scene.player.take_damage(self.contact_damage, hit_direction)
+            self.scene.player.take_damage(self.contact_damage, hit_direction, self.contact_knockback)
             self.contact_cooldown_timer = self.contact_cooldown
     
     def save_data(self):
