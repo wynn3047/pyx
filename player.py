@@ -12,7 +12,7 @@ class Player(GameCharacter):
         self.combat_hitbox.center = self.rect.center
         self.hit_flash_color = COLORS['red']
         self.state = Idle(self)
-        self.speed = 80
+        self.speed = 85
         
         # Tumble cooldown and usage
         self.tumble_charges = 2
@@ -30,7 +30,7 @@ class Player(GameCharacter):
         
         self.throw_vel = 600
         self.throw_rate = 16.5 # Default 16.5
-        self.throw_damage = random.randint(15, 20)
+        self.throw_damage = random.randint(1, 5)
 
         # Combat Upgrades
         self.proj_pierce = PLAYER_COMBAT_CONFIG['proj_pierce_count']
@@ -38,6 +38,7 @@ class Player(GameCharacter):
         self.proj_spread = PLAYER_COMBAT_CONFIG['proj_spread_angle']
         self.proj_burst_count = PLAYER_COMBAT_CONFIG['proj_burst_count']
         self.proj_burst_delay = PLAYER_COMBAT_CONFIG['proj_burst_delay']
+        self.proj_ricochet = PLAYER_COMBAT_CONFIG['proj_ricochet_count']
 
     @property
     def is_low_hp(self):
@@ -162,6 +163,7 @@ class Player(GameCharacter):
                 damage=self.throw_damage,
                 knockback_force=HP_CONFIG['player_dagger_knockback'],
                 pierce_count=self.proj_pierce,
+                ricochet_count=self.proj_ricochet,
                 sprite_path='assets\characters\player\weapon\dagger.png'
             )
 

@@ -53,11 +53,12 @@ HP_CONFIG = {
 
 PLAYER_COMBAT_CONFIG = {
     'proj_pierce_count': 0,      # 0 = hits one enemy then dies
-    'proj_count': 2,             # Number of projectiles per shot
+    'proj_count': 1,             # Number of projectiles per shot
     'proj_spread_angle': 10,     # Arc in degrees for spread shots
     'proj_burst_count': 1,       # Consecutive shots per attack
-    'proj_burst_delay': 0.05 # Delay between consecutive shots
-}
+    'proj_burst_delay': 0.05,     # Delay between consecutive shots
+    'proj_ricochet_count': 0     # Number of bounces off walls
+    }
 
 HEART_CONFIG = {            
     'hp_per_heart': 50,                 

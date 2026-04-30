@@ -124,7 +124,7 @@
   </object>
  </objectgroup>
  <objectgroup id="8" name="spawners">
-  <object id="5" name="spawners" x="133" y="296.515" width="41.4848" height="11.1515">
+  <object id="5" name="spawners" x="160" y="301.182" width="7.1515" height="8.1515">
    <properties>
     <property name="count" type="int" value="1"/>
    </properties>

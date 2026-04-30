@@ -88,7 +88,7 @@ class Camera(pygame.sprite.Group):
                     scaled_w = int(heart_size * ratio)
                     scaled_h = int(heart_size * ratio)
 
-                    if scaled_w > 0 and scaled_h > 0:
+                    if scaled_w > 1 and scaled_h > 1:
                         scaled_heart = pygame.transform.scale(scene.heart_sprite, (scaled_w, scaled_h))
 
                         # Gradual Darkening: Multiply color by ratio (255 = full bright, 0 = black)
