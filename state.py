@@ -31,15 +31,88 @@ class SplashScreen(State):
     # Screen before loading the game
     def __init__(self, game):
         super().__init__(game)
+        self.transition = Transition()
+
+    def start_game(self):
+        # Reset transition for whenever we return to this screen
+        self.transition.exiting = False
+        self.transition.alpha = 255
+        
+        # Reset game data for freshstart
+        self.game.player_data = {}
+        self.game.scene_states = {}
+        
+        LoadingScreen(self.game, lambda: Scene(self.game, '0', '0')).enter_state()
 
     def update(self, dt):
-        if INPUTS['enter']:
-            Scene(self.game, '0', '0').enter_state()
+        if INPUTS['enter'] and not self.transition.exiting:
+            self.transition.exiting = True
+            self.transition.callback = self.start_game
             self.game.reset_inputs()
+        
+        self.transition.update(dt)
 
     def draw(self, screen):
         screen.fill((COLORS['charcoal_grey']))
         self.game.render_text('PyX', COLORS['white'], HEAD_FONT, 32, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        self.transition.draw(screen)
+
+# Loading Screen State
+class LoadingScreen(State):
+    def __init__(self, game, target_factory):
+        super().__init__(game)
+        self.target_factory = target_factory
+        
+        # Load animation frames
+        self.frames = self.game.get_images('assets/ui/loading')
+        self.frame_index = 0
+        self.animation_speed = 10 
+        self.animation_timer = 0
+        
+        # Transition and timing
+        self.transition = Transition()
+        self.min_duration = 1.7 # Minimum time to show animation
+        self.timer = 0
+        self.exiting = False
+
+    def finish_loading(self):
+        # Create next state
+        next_state = self.target_factory()
+        # Remove LoadingScreen from stack
+        if self.game.states[-1] == self:
+            self.game.states.pop()
+        
+        if next_state == self.game.splash_screen and next_state in self.game.states:
+            return 
+            
+        next_state.enter_state()
+
+    def update(self, dt):
+        self.transition.update(dt)
+        self.timer += dt
+        
+        # Animation
+        self.animation_timer += dt
+        if self.animation_timer >= 1 / self.animation_speed:
+            self.animation_timer = 0
+            self.frame_index = (self.frame_index + 1) % len(self.frames)
+            
+        # Trigger exit after min duration
+        if self.timer >= self.min_duration and not self.exiting:
+            if self.transition.alpha <= 0: 
+                self.exiting = True
+                self.transition.exiting = True
+                self.transition.callback = self.finish_loading
+
+    def draw(self, screen):
+        # Draw current frame
+        if self.frames:
+            current_frame = self.frames[self.frame_index]
+            screen.blit(current_frame, (0, 0))
+        else:
+            screen.fill(COLORS['black'])
+            
+        self.transition.draw(screen)
 
 # After
 class Scene(State):
@@ -64,14 +137,14 @@ class Scene(State):
         
         self.tmx_data = load_pygame(f'scenes/{self.current_scene}/{self.current_scene}.tmx') # Load Tilemap data
         self.create_scene() # Make the scene
-        self.transition = Transition(self)
+        self.transition = Transition(self.go_to_scene)
         
         # Death sequence
         self.is_dead = False
         self.death_phase = None # slowdown-> blacken-> pause
         self.death_timer = 0
         self.death_message = None
-        self.death_slowdown_dt = 1.0 # Multiplier for dt during slowmo
+        self.death_slowdown_dt = 1.0 
         
         # Buttons for death sequence
         self.restart_button_rect = pygame.Rect(0, 0, 80, 20)
@@ -80,8 +153,7 @@ class Scene(State):
         self.exit_button_rect = pygame.Rect(0, 0, 80, 20)
         self.exit_button_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 45)
         
-        # Load heart sprite
-        self.heart_sprite = pygame.image.load('assets/ui/heart.png').convert_alpha()
+        self.heart_sprite = pygame.image.load(HP_CONFIG['heart_path']).convert_alpha()
         # Pre-render black heart for background
         self.black_heart_sprite = self.heart_sprite.copy()
         self.black_heart_sprite.fill(COLORS['black'], special_flags=pygame.BLEND_RGB_MULT)
@@ -90,7 +162,6 @@ class Scene(State):
         # Create the next scene based on stored navigation data
         self.game.player_data = self.player.save_data() # Save before entering
         
-        # LOCAL PERSISTENCE: Save all enemies in this scene with a timestamp
         # Only save enemies that have HP > 0 to ensure dead ones stay dead
         enemy_states = [enemy.save_data() for enemy in self.enemy_sprites if enemy.hp > 0]
         scene_key = str(self.current_scene)
@@ -169,7 +240,6 @@ class Scene(State):
                         rx = random.uniform(obj.x, obj.x + obj.width)
                         ry = random.uniform(obj.y, obj.y + obj.height)
                         # Validate position (not in wall AND not on top of another enemy)
-                        # A 24x24 buffer for 8 px gap
                         buffer_rect = pygame.Rect(0, 0, 24, 24) 
                         buffer_rect.center = (rx, ry)
 
@@ -221,19 +291,6 @@ class Scene(State):
         if 'detail 1' in layers:
             for x, y, surf in self.tmx_data.get_layer_by_name('detail 1').tiles():
                 Object([self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), 'detail 1', surf) 
-
-        if 'Interactions' in layers:
-            from objects import Trapdoor
-            for obj in self.tmx_data.get_layer_by_name('Interactions'):
-                if obj.name == 'trapdoor':
-                    closed_id = obj.properties.get('closed_id')
-                    open_id = obj.properties.get('open_id')
-                    
-                    # Fetch surfaces from Tiled data using GIDs
-                    closed_surf = self.tmx_data.get_tile_image_by_gid(closed_id)
-                    open_surf = self.tmx_data.get_tile_image_by_gid(open_id)
-                    
-                    self.trapdoor = Trapdoor([self.draw_sprites], (obj.x, obj.y), 'floors', closed_surf, open_surf)
     
     def start_death_sequence(self):
         if self.is_dead:
@@ -245,6 +302,27 @@ class Scene(State):
         self.death_message = random.choice(DEATH_MESSAGES)
         self.death_slowdown_dt = DEATH_SEQUENCE_CONFIG['slowdown_multiplier'] # Start slowmo instantly
     
+    def trigger_restart(self):
+        if not self.transition.exiting:
+            self.transition.exiting = True
+            self.transition.callback = self.restart_game
+
+    def restart_game(self):
+        self.game.player_data = {} # Reset player stats
+        self.game.scene_states = {} # Clear room persistence
+        self.game.states.pop()
+        LoadingScreen(self.game, lambda: Scene(self.game, '0', '0')).enter_state()
+
+    def trigger_exit(self):
+        if not self.transition.exiting:
+            self.transition.exiting = True
+            self.transition.callback = self.exit_to_splash
+
+    def exit_to_splash(self):
+        self.game.states = [self.game.splash_screen]
+        # Show loading before actually being back at splash fully
+        LoadingScreen(self.game, lambda: self.game.splash_screen).enter_state()
+
     def update_death_sequence(self, dt):
         if self.death_phase == 'slowdown':
             self.death_timer -= dt
@@ -263,23 +341,19 @@ class Scene(State):
             mouse_pos = pygame.mouse.get_pos()
             
             # Interaction
-            if self.restart_button_rect.collidepoint(mouse_pos):
+            if self.restart_button_rect.collidepoint(mouse_pos) and not self.transition.exiting:
                 if INPUTS['left_click']:
-                    # Restart to Scene 0
-                    self.game.player_data = {} # Reset player stats
-                    self.game.scene_states = {} # Clear room persistence
-                    Scene(self.game, '0', '0').enter_state()
+                    self.trigger_restart()
             
-            if self.exit_button_rect.collidepoint(mouse_pos):
+            if self.exit_button_rect.collidepoint(mouse_pos) and not self.transition.exiting:
                 if INPUTS['left_click']:
-                    # Exit to Splash
-                    self.game.states = [self.game.splash_screen]
+                    self.trigger_exit()
     
     def draw_death_menu(self, screen):
         # Dim background further
         dim_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         dim_surf.fill((0, 0, 0))
-        dim_surf.set_alpha(150)
+        dim_surf.set_alpha(130)
         screen.blit(dim_surf, (0, 0))
 
         # Death Message
@@ -332,7 +406,8 @@ class Scene(State):
             self.update_sprites.update(effective_dt)
             if self.player:
                 self.camera.update(effective_dt, self.player)
-            self.transition.update(dt)
+        
+        self.transition.update(dt)
 
 
     def draw(self, screen):

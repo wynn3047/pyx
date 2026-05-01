@@ -49,7 +49,8 @@ HP_CONFIG = {
     'enemy_contact_knockback': 120,
     'player_dagger_knockback': 30,
     'transparency_alpha': 100,
-    'flicker_interval': 0.08,     
+    'flicker_interval': 0.08,
+    'heart_path': 'assets/ui/heart.png'     
 }
 
 PLAYER_COMBAT_CONFIG = {
@@ -107,7 +108,7 @@ DEATH_MESSAGES = [
     "ya ded.",
     "R.I.P.",
     "damn.",
-    "T_T T_T T_T"
+    "T_T"
 ]
 
 
@@ -123,9 +124,9 @@ LAYERS = ['background',
           'foreground']
 
 SHADOW_CONFIG = {
-    'height': 6, # Pixel height of ellipse
-    'alpha': 100, # Transparency
-    'offset_y': 4, # Position above ground 
+    'height': 6, 
+    'alpha': 100, 
+    'offset_y': 4,  
     'width_scale': 0.9 # Width percentage of sprite width (narrower)
 }
 

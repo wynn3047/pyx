@@ -92,7 +92,7 @@ class Camera(pygame.sprite.Group):
                     scaled_w = int(heart_size * ratio)
                     scaled_h = int(heart_size * ratio)
 
-                    if scaled_w > 1 and scaled_h > 1:
+                    if scaled_w > 2 and scaled_h > 2:
                         scaled_heart = pygame.transform.scale(scene.heart_sprite, (scaled_w, scaled_h))
 
                         # Gradual Darkening: Multiply color by ratio (255 = full bright, 0 = black)
@@ -116,7 +116,7 @@ class Camera(pygame.sprite.Group):
         screen.blit(self.stealth_frame, (pos_x, pos_y))
         
         ratio = player.stealth / player.max_stealth
-        if ratio > 0:
+        if ratio >= 0:
             fill_image = self.stealth_fill.copy()
             full_w, full_h = fill_image.get_size()
             

@@ -12,7 +12,8 @@ class Player(GameCharacter):
         self.combat_hitbox.center = self.rect.center
         self.hit_flash_color = COLORS['red']
         self.state = Idle(self)
-        self.force = 2500
+        self.force = 2250
+        
         # Tumble cooldown and usage
         self.tumble_charges = 2
         self.tumble_max_charges = 2
@@ -41,8 +42,11 @@ class Player(GameCharacter):
         # Stealth System
         self.stealth = 0
         self.max_stealth = STEALTH_CONFIG['max_stealth']
-        self.is_stealth_ready = False
         self.stealth_regen_delay_timer = 0
+
+    @property
+    def is_stealth_ready(self):
+        return self.stealth >= self.max_stealth
 
     @property
     def is_low_hp(self):
@@ -54,11 +58,9 @@ class Player(GameCharacter):
             self.stealth_regen_delay_timer = max(0, self.stealth_regen_delay_timer - dt)
             return
 
-        # Stealth fills faster when standing still
         regen = STEALTH_CONFIG['stealth_regen']
             
         self.stealth = min(self.max_stealth, self.stealth + regen * dt)
-        self.is_stealth_ready = (self.stealth >= self.max_stealth)
 
     def take_damage(self, amount, knockback_dir=None, knockback_force=None, knockback_stun=0.3):
         super().take_damage(amount, knockback_dir, knockback_force, knockback_stun)
@@ -220,9 +222,8 @@ class Player(GameCharacter):
             super().update(dt)
             return
 
-        super().update(dt)
-        self.exit_scene()
         self.update_stealth(dt)
+        self.update_regen(dt)
         
         # Recharge tumble during Run/Idle not on Tumble
         if self.tumble_charges < self.tumble_max_charges and not isinstance(self.state, Tumble):
@@ -230,9 +231,9 @@ class Player(GameCharacter):
             if self.tumble_cooldown_timer <= 0:
                 self.tumble_charges += 1
                 self.tumble_cooldown_timer = self.tumble_cooldown
-        
-        # HP & I-frame timers
-        self.update_regen(dt)
+
+        super().update(dt)
+        self.exit_scene()
         
         if INPUTS['backspace']:
             self.take_damage(150, vect(0,0), 0)
@@ -355,7 +356,6 @@ class Throw:
                 # Consume Stealth
                 if self.is_stealth_strike:
                     player.stealth = 0 # Full reset for strike
-                    player.is_stealth_ready = False
                 else:
                     player.stealth = max(0, player.stealth - STEALTH_CONFIG['attack_consumption'])
                 
