@@ -24,7 +24,7 @@ class Projectile(pygame.sprite.Sprite):
         
         self.rect = self.image.get_rect(center=pos)
         # Narrow hitbox for precision
-        self.hitbox = self.rect.copy().inflate(-self.rect.width * 0.7, -self.rect.height * 0.7)
+        self.hitbox = self.rect.copy().inflate(-self.rect.width * 0.8, -self.rect.height * 0.8)
         
         self.lifespan = 2 # Seconds before disappearing
         self.timer = 0

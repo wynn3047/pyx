@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="50" height="28" tilewidth="16" tileheight="16" infinite="0" nextlayerid="10" nextobjectid="47">
+<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="50" height="28" tilewidth="16" tileheight="16" infinite="0" nextlayerid="11" nextobjectid="48">
  <editorsettings>
   <export target="0.csv" format="csv"/>
  </editorsettings>
@@ -168,6 +168,14 @@
   <object id="46" name="spawners" x="711.318" y="85.5" width="23.6136" height="8.29545">
    <properties>
     <property name="count" type="int" value="1"/>
+   </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="10" name="descends">
+  <object id="47" name="trapdoor" x="239.589" y="368.446" width="16" height="16">
+   <properties>
+    <property name="closed_id" type="int" value="13"/>
+    <property name="open_id" type="int" value="3"/>
    </properties>
   </object>
  </objectgroup>

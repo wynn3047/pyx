@@ -12,24 +12,22 @@ class Player(GameCharacter):
         self.combat_hitbox.center = self.rect.center
         self.hit_flash_color = COLORS['red']
         self.state = Idle(self)
-        self.speed = 85
-        
+        self.force = 2500
         # Tumble cooldown and usage
         self.tumble_charges = 2
         self.tumble_max_charges = 2
         self.tumble_cooldown = 1.5
         self.tumble_cooldown_timer = 0
-        self.tumble_speed = 400
+        self.tumble_speed = 350
         # Player HP & Invincibility
         self.hp = HP_CONFIG['player_max_hp']
         self.max_hp = HP_CONFIG['player_max_hp']
         
         self.regen_delay_timer = 0 # Cooldown after taking  dmg
         self.hp_regen = HP_CONFIG['player_hp_regen']
-        self.knockback_speed = 250
         
-        self.throw_vel = 400
-        self.throw_rate = 16.5 # Default 16.5
+        self.throw_vel = 350
+        self.throw_rate = 15.5
         self.throw_damage = random.uniform(10, 20)
 
         # Combat Upgrades
@@ -44,12 +42,18 @@ class Player(GameCharacter):
         self.stealth = 0
         self.max_stealth = STEALTH_CONFIG['max_stealth']
         self.is_stealth_ready = False
+        self.stealth_regen_delay_timer = 0
 
     @property
     def is_low_hp(self):
         return self.hp <= (self.max_hp / 2)
 
     def update_stealth(self, dt):
+        # Handle delay timer
+        if self.stealth_regen_delay_timer > 0:
+            self.stealth_regen_delay_timer = max(0, self.stealth_regen_delay_timer - dt)
+            return
+
         # Stealth fills faster when standing still
         regen = STEALTH_CONFIG['stealth_regen']
             
@@ -132,6 +136,7 @@ class Player(GameCharacter):
             'tumble_cooldown_timer': self.tumble_cooldown_timer,
             'regen_delay_timer': self.regen_delay_timer,
             'stealth': self.stealth,
+            'stealth_regen_delay_timer': self.stealth_regen_delay_timer,
             'proj_count': self.proj_count,
             'proj_pierce': self.proj_pierce,
             'proj_ricochet': self.proj_ricochet,
@@ -149,6 +154,7 @@ class Player(GameCharacter):
         self.tumble_cooldown_timer = data.get('tumble_cooldown_timer', self.tumble_cooldown_timer)
         self.regen_delay_timer = data.get('regen_delay_timer', self.regen_delay_timer)
         self.stealth = data.get('stealth', 0)
+        self.stealth_regen_delay_timer = data.get('stealth_regen_delay_timer', 0)
         self.proj_count = data.get('proj_count', self.proj_count)
         self.proj_pierce = data.get('proj_pierce', self.proj_pierce)
         self.proj_ricochet = data.get('proj_ricochet', self.proj_ricochet)
@@ -349,8 +355,12 @@ class Throw:
                 # Consume Stealth
                 if self.is_stealth_strike:
                     player.stealth = 0 # Full reset for strike
+                    player.is_stealth_ready = False
                 else:
                     player.stealth = max(0, player.stealth - STEALTH_CONFIG['attack_consumption'])
+                
+                # Reset regen delay
+                player.stealth_regen_delay_timer = STEALTH_CONFIG['stealth_regen_delay']
             else:
                 self.burst_timer -= dt
 

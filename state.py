@@ -60,6 +60,7 @@ class Scene(State):
         self.exit_sprites = pygame.sprite.Group() 
         
         self.player = None
+        self.trapdoor = None
         
         self.tmx_data = load_pygame(f'scenes/{self.current_scene}/{self.current_scene}.tmx') # Load Tilemap data
         self.create_scene() # Make the scene
@@ -220,6 +221,19 @@ class Scene(State):
         if 'detail 1' in layers:
             for x, y, surf in self.tmx_data.get_layer_by_name('detail 1').tiles():
                 Object([self.draw_sprites], (x * TILE_SIZE, y * TILE_SIZE), 'detail 1', surf) 
+
+        if 'Interactions' in layers:
+            from objects import Trapdoor
+            for obj in self.tmx_data.get_layer_by_name('Interactions'):
+                if obj.name == 'trapdoor':
+                    closed_id = obj.properties.get('closed_id')
+                    open_id = obj.properties.get('open_id')
+                    
+                    # Fetch surfaces from Tiled data using GIDs
+                    closed_surf = self.tmx_data.get_tile_image_by_gid(closed_id)
+                    open_surf = self.tmx_data.get_tile_image_by_gid(open_id)
+                    
+                    self.trapdoor = Trapdoor([self.draw_sprites], (obj.x, obj.y), 'floors', closed_surf, open_surf)
     
     def start_death_sequence(self):
         if self.is_dead:
@@ -345,14 +359,13 @@ class Scene(State):
             self.debugger([
                 str(f'FPS: {round(self.game.clock.get_fps(), 2)}'),
                 str(f'Vel: {round(self.player.vel, 2)}'),
+                str(f'Pos: ({round(self.player.pos.x)}, {round(self.player.pos.y)})'),
                 str(f'State: {self.player.state}'),
                 str(f'Tumble Charge: {self.player.tumble_charges}'),
                 str(f'Tumble CD: {round(self.player.tumble_cooldown_timer, 1)}'),
                 str(f'HP: {round(self.player.hp, 1)}'),
                 str(f'I-frame: {round(self.player.invulnerability_timer, 2)}'),
                 str(f'HP delay: {round(self.player.regen_delay_timer, 1)}'),
-                str(f'Death Msg: {self.death_message}'),
-                str(f'Death Phase: {self.death_phase}'),
                 str(f'Time: {round(pygame.time.get_ticks() / 1000, 1)}')
             ])
 

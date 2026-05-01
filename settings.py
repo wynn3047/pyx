@@ -47,7 +47,7 @@ HP_CONFIG = {
     'hit_flash_duration': 0.1,
     'hit_knockback': 80, # Default fallback
     'enemy_contact_knockback': 120,
-    'player_dagger_knockback': 50,
+    'player_dagger_knockback': 30,
     'transparency_alpha': 100,
     'flicker_interval': 0.08,     
 }
@@ -55,24 +55,23 @@ HP_CONFIG = {
 PLAYER_COMBAT_CONFIG = {
     'proj_pierce_count': 0,      
     'proj_count': 1,             
-    'proj_spread_angle': 30,     
-    'proj_burst_count': 2,       
+    'proj_spread_angle': 20,     
+    'proj_burst_count': 1,       
     'proj_burst_delay': 0.1,     
-    'proj_ricochet_count': 0     
+    'proj_ricochet_count': 0 
     }
 
 STEALTH_CONFIG = {
     'max_stealth': 100.0,
     'stealth_regen': 20.0,         # Per second
+    'stealth_regen_delay': 1.5,    # Seconds before regen starts
     'attack_consumption': 25.0, # Normal attack reduction
-
     # Stealth Strike Multipliers
     'damage_mult': 2.3,
     'velocity_mult': 1.4,
     'count_add': 2,            
     'pierce_add': 1,
     'ricochet_add': 0,
-
     'frame_path': 'assets/ui/stealth_bar_frame.png',
     'fill_path': 'assets/ui/stealth_bar_fill.png'
 }
@@ -106,8 +105,9 @@ TRANSPARENCY_FLICKER_CONFIG = {
 DEATH_MESSAGES = [
     "dang...",
     "ya ded.",
-    "You Died.",
-    "damn"
+    "R.I.P.",
+    "damn.",
+    "T_T T_T T_T"
 ]
 
 
