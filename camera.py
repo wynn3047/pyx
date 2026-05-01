@@ -111,7 +111,7 @@ class Camera(pygame.sprite.Group):
         # Position: Center-left
         frame_h = self.stealth_frame.get_height()
         pos_x = 375
-        pos_y = (SCREEN_HEIGHT - frame_h) // 2
+        pos_y = 20 + (SCREEN_HEIGHT - frame_h) // 2
         
         screen.blit(self.stealth_frame, (pos_x, pos_y))
         
@@ -137,6 +137,37 @@ class Camera(pygame.sprite.Group):
             
             # Align the slice cuz my image has 9px margin
             screen.blit(fill_image, (pos_x, pos_y + (full_h - padding - current_fill_h)), area=clip_rect)
+
+    def draw_tumble_ui(self, screen, scene):
+        if not scene.player or not hasattr(scene, 'tumble_frame'):
+            return
+
+        player = scene.player
+        icon_w, icon_h = scene.tumble_frame.get_size()
+        spacing = TUMBLE_UI_CONFIG['spacing']
+        
+        pos_y = HEART_CONFIG['ui_offset_y'] + HEART_CONFIG['heart_size'] + TUMBLE_UI_CONFIG['offset_y_below_hearts']
+        
+        for i in range(player.tumble_max_charges):
+            x = (SCREEN_WIDTH - HEART_CONFIG['ui_offset_x'] - icon_w) - (i * (icon_w + spacing))
+            
+            screen.blit(scene.tumble_frame, (x, pos_y))
+            
+            fill_surf = scene.tumble_fill.copy()
+            fill_w, fill_h = fill_surf.get_size()
+            
+            # If slot is full
+            if i < player.tumble_charges:
+                fill_surf.fill(COLORS['white'], special_flags=pygame.BLEND_RGB_MULT)
+                screen.blit(fill_surf, (x, pos_y))
+            
+            elif i == player.tumble_charges:
+                ratio = 1.0 - (player.tumble_cooldown_timer / player.tumble_cooldown)
+                fill_surf.set_alpha(150)
+                if ratio > 0:
+                    current_w = int(fill_w * ratio)
+                    clip_rect = pygame.Rect(fill_w - current_w, 0, current_w, fill_h)
+                    screen.blit(fill_surf, (x + (fill_w - current_w), pos_y), area=clip_rect)
 
     def show_hitbox(self, screen, sprite, offset):
         # Visual hitbox
@@ -218,6 +249,7 @@ class Camera(pygame.sprite.Group):
                         self.show_hitbox(screen, sprite, draw_offset)
         
         self.draw_hearts(screen, scene)
+        self.draw_tumble_ui(screen, scene)
         self.draw_stealth_bar(screen, scene.player)
 
         # Full-screen red flash if player is hit while at low HP (<= 50%)

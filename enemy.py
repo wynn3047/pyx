@@ -1,5 +1,6 @@
 import pygame
 import random 
+import math
 from settings import * 
 from characters import GameCharacter
 
@@ -209,7 +210,10 @@ class Enemy(GameCharacter):
 
         # Smoothly transition the movement vector
         if chosen_dir.length() > 0:
-            self.move_direction += (chosen_dir - self.move_direction) * responsiveness * dt
+            # Framerate independent LERP: v = v + (target - v) * (1 - exp(-rate * dt))
+            lerp_factor = 1.0 - math.exp(-responsiveness * dt)
+            self.move_direction += (chosen_dir - self.move_direction) * lerp_factor
+            
             if self.move_direction.length() > 0:
                 self.move_direction.normalize_ip()
     
@@ -318,7 +322,7 @@ class Chase:
         enemy.frame_index = 0
         enemy.is_chasing = True
         enemy.speed = 30
-        enemy.force = 2250
+        enemy.force = 1800
         
     def __str__(self):
         return "Chase"

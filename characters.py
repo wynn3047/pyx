@@ -1,4 +1,5 @@
 import pygame
+import math
 from settings import *
 
 # Characters will inherit from this class
@@ -10,7 +11,7 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         self.scene = scene
         self.name = name
         self.z = z
-        self.speed = 70
+        self.speed = 50
         self.force = 2000
         self.accel = vect()
         self.vel = vect()
@@ -117,14 +118,10 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
 
     # Motions & Equations
     def physics(self, dt, frict):
-        # 1. APPLY ACCELERATION
         self.vel += self.accel * dt
 
-        # 2. APPLY FRICTION
-        drag = abs(frict)
-        self.vel *= max(0, 1 - drag * dt)
+        self.vel *= math.exp(-frict * dt)
 
-        # 3. APPLY MOVEMENT & COLLISIONS
         
         # X Direction
         self.pos.x += self.vel.x * dt
@@ -136,7 +133,7 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
         self.hitbox.centery = self.pos.y
         self.collisions('y', self.scene.block_sprites)
 
-        # MAP BOUNDARIES: Clamp hitbox within the map dimensions
+        # MAP BOUNDARIES
         map_w, map_h = self.scene.camera.scene_size
         
         # Allow player a small bleed to hit exit triggers at map edges

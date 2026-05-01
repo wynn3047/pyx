@@ -59,7 +59,8 @@ PLAYER_COMBAT_CONFIG = {
     'proj_spread_angle': 20,     
     'proj_burst_count': 1,       
     'proj_burst_delay': 0.1,     
-    'proj_ricochet_count': 0 
+    'proj_ricochet_count': 0,
+    'proj_spawn_offset': 12
     }
 
 STEALTH_CONFIG = {
@@ -72,7 +73,7 @@ STEALTH_CONFIG = {
     'velocity_mult': 1.4,
     'count_add': 2,            
     'pierce_add': 1,
-    'ricochet_add': 0,
+    'ricochet_add': 1,
     'frame_path': 'assets/ui/stealth_bar_frame.png',
     'fill_path': 'assets/ui/stealth_bar_fill.png'
 }
@@ -112,8 +113,16 @@ DEATH_MESSAGES = [
 ]
 
 
+# Tumble HUD
+TUMBLE_UI_CONFIG = {
+    'offset_y_below_hearts': 5, 
+    'spacing': 1, 
+    'frame_path': 'assets/ui/tumble_unfilled.png',
+    'fill_path': 'assets/ui/tumble_filled.png'
+}
+
 # Layer order top to bottom
-LAYERS = ['background',
+LAYERS = [
           'objects',
           'floors',
           'holes',

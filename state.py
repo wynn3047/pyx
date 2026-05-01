@@ -158,6 +158,10 @@ class Scene(State):
         self.black_heart_sprite = self.heart_sprite.copy()
         self.black_heart_sprite.fill(COLORS['black'], special_flags=pygame.BLEND_RGB_MULT)
 
+        # Tumble HUD assets
+        self.tumble_frame = pygame.image.load(TUMBLE_UI_CONFIG['frame_path']).convert_alpha()
+        self.tumble_fill = pygame.image.load(TUMBLE_UI_CONFIG['fill_path']).convert_alpha()
+
     def go_to_scene(self):
         # Create the next scene based on stored navigation data
         self.game.player_data = self.player.save_data() # Save before entering
@@ -349,6 +353,37 @@ class Scene(State):
                 if INPUTS['left_click']:
                     self.trigger_exit()
     
+    def draw_tumble_ui(self, screen):
+        if not self.player: return
+        
+        # Position below hearts
+        base_x = HEART_CONFIG['ui_offset_x']
+        # Hearts take up 'heart_size' height, plus offset
+        base_y = HEART_CONFIG['ui_offset_y'] + HEART_CONFIG['heart_size'] + TUMBLE_UI_CONFIG['ui_offset_y']
+        
+        size = TUMBLE_UI_CONFIG['square_size']
+        spacing = TUMBLE_UI_CONFIG['spacing']
+        
+        tumble_ratios = self.player.get_tumble_states()
+        
+        for i, ratio in enumerate(tumble_ratios):
+            rect_x = base_x + (size + spacing) * i
+            rect_y = base_y
+            
+            # 1. Draw Black Background
+            bg_rect = pygame.Rect(rect_x, rect_y, size, size)
+            pygame.draw.rect(screen, TUMBLE_UI_CONFIG['bg_color'], bg_rect)
+            
+            # 2. Calculate Fill
+            if ratio > 0:
+                fill_height = int(size * ratio)
+                # Bottom-to-up: y starts at bottom and goes up
+                fill_rect = pygame.Rect(rect_x, rect_y + (size - fill_height), size, fill_height)
+                
+                # 3. Choose color (Gold if ready, White if filling)
+                color = TUMBLE_UI_CONFIG['ready_color'] if ratio >= 1.0 else TUMBLE_UI_CONFIG['fill_color']
+                pygame.draw.rect(screen, color, fill_rect)
+                
     def draw_death_menu(self, screen):
         # Dim background further
         dim_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -373,6 +408,8 @@ class Scene(State):
         pygame.draw.rect(screen, exit_color, self.exit_button_rect, border_radius=3)
         self.game.render_text('EXIT', exit_text_color, PRIMARY_FONT, 10, self.exit_button_rect.center)
     
+    
+
     def apply_grayscale_bleed(self, screen, amount):
         # Capture the screen, grayscale it, and blit with alpha
         temp_surf = screen.copy()

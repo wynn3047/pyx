@@ -14,11 +14,12 @@ ATTACK/STEALTH
 - Increment stealth strike multiplier but reduce stealth regen
 - Decrease normal attack stealth reduction
 - +1 Projectile count with +20 spread
-- +1 Burst count but takes relative reduction on stealth
-- +1 Pierce but reduce/low knockback
-- +1 Projectile bounce but increase knockback
+- +1 Burst count 
+- +1 Pierce 
+- +1 Projectile 
 
 MOVEMENT
+- Slightly reduce tumble cd, +1 Tumble charge, +
 - Reduce tumble cd
 - +1 Tumble charge
 - +10 speed cap

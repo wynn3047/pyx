@@ -100,8 +100,7 @@ class Projectile(pygame.sprite.Sprite):
             self.kill()
     def update(self, dt):
         self.timer += dt
-        if self.timer >= self.lifespan:
-            self.kill()
+        
             
         # Movement
         self.pos += self.direction * self.speed * dt

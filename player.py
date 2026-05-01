@@ -13,7 +13,7 @@ class Player(GameCharacter):
         self.hit_flash_color = COLORS['red']
         self.state = Idle(self)
         self.force = 2250
-        
+        self.speed = 70
         # Tumble cooldown and usage
         self.tumble_charges = 2
         self.tumble_max_charges = 2
@@ -38,6 +38,7 @@ class Player(GameCharacter):
         self.proj_burst_count = PLAYER_COMBAT_CONFIG['proj_burst_count']
         self.proj_burst_delay = PLAYER_COMBAT_CONFIG['proj_burst_delay']
         self.proj_ricochet = PLAYER_COMBAT_CONFIG['proj_ricochet_count']
+        self.proj_spawn_offset = PLAYER_COMBAT_CONFIG['proj_spawn_offset']
         
         # Stealth System
         self.stealth = 0
@@ -201,10 +202,11 @@ class Player(GameCharacter):
         # Spawn projectiles
         for angle in angles:
             direction = vect(1, 0).rotate(angle)
+            spawn_pos = self.pos + (direction * self.proj_spawn_offset)
             Projectile(
                 self.scene,
                 [self.scene.update_sprites, self.scene.draw_sprites],
-                self.pos,
+                spawn_pos,
                 direction,
                 speed=speed,
                 damage=damage,
