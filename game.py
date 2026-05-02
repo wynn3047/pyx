@@ -1,6 +1,7 @@
 import pygame, sys, os
 from settings import *
 from state import SplashScreen
+from ui import UI
 
 class Game:
     def __init__(self):
@@ -17,7 +18,7 @@ class Game:
 
         pygame.display.set_caption("PyX")
         
-        # Font caching
+        self.ui = UI(self)
         self.fonts = {} 
         
         self.running = True

@@ -117,11 +117,16 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
                     self.pos.y = self.hitbox.centery
 
     # Motions & Equations
-    def physics(self, dt, frict):
+    def physics(self, dt, frict, max_speed=None):
         self.vel += self.accel * dt
-
         self.vel *= math.exp(-frict * dt)
 
+        # SPEED CLAMPING
+        if self.knockback_timer <= 0:
+            limit = max_speed if max_speed is not None else self.speed
+            current_speed = self.vel.magnitude()
+            if current_speed > limit:
+                self.vel = self.vel.normalize() * limit
         
         # X Direction
         self.pos.x += self.vel.x * dt
@@ -159,12 +164,6 @@ class GameCharacter(pygame.sprite.Sprite): # acts as a foundation
             self.hitbox.bottom = map_h + margin
             self.pos.y = self.hitbox.centery
             self.vel.y = 0
-
-        # SPEED CLAMPING
-        if self.knockback_timer <= 0:
-            current_speed = self.vel.magnitude()
-            if current_speed > self.speed:
-                self.vel = self.vel.normalize() * self.speed
 
         # Keep hitboxes synced
         self.rect.center = self.pos

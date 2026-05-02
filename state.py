@@ -145,23 +145,7 @@ class Scene(State):
         self.death_timer = 0
         self.death_message = None
         self.death_slowdown_dt = 1.0 
-        
-        # Buttons for death sequence
-        self.restart_button_rect = pygame.Rect(0, 0, 80, 20)
-        self.restart_button_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 20)
-        
-        self.exit_button_rect = pygame.Rect(0, 0, 80, 20)
-        self.exit_button_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 45)
-        
-        self.heart_sprite = pygame.image.load(HP_CONFIG['heart_path']).convert_alpha()
-        # Pre-render black heart for background
-        self.black_heart_sprite = self.heart_sprite.copy()
-        self.black_heart_sprite.fill(COLORS['black'], special_flags=pygame.BLEND_RGB_MULT)
-
-        # Tumble HUD assets
-        self.tumble_frame = pygame.image.load(TUMBLE_UI_CONFIG['frame_path']).convert_alpha()
-        self.tumble_fill = pygame.image.load(TUMBLE_UI_CONFIG['fill_path']).convert_alpha()
-
+    
     def go_to_scene(self):
         # Create the next scene based on stored navigation data
         self.game.player_data = self.player.save_data() # Save before entering
@@ -345,86 +329,13 @@ class Scene(State):
             mouse_pos = pygame.mouse.get_pos()
             
             # Interaction
-            if self.restart_button_rect.collidepoint(mouse_pos) and not self.transition.exiting:
+            if self.game.ui.restart_button_rect.collidepoint(mouse_pos) and not self.transition.exiting:
                 if INPUTS['left_click']:
                     self.trigger_restart()
             
-            if self.exit_button_rect.collidepoint(mouse_pos) and not self.transition.exiting:
+            if self.game.ui.exit_button_rect.collidepoint(mouse_pos) and not self.transition.exiting:
                 if INPUTS['left_click']:
                     self.trigger_exit()
-    
-    def draw_tumble_ui(self, screen):
-        if not self.player: return
-        
-        # Position below hearts
-        base_x = HEART_CONFIG['ui_offset_x']
-        # Hearts take up 'heart_size' height, plus offset
-        base_y = HEART_CONFIG['ui_offset_y'] + HEART_CONFIG['heart_size'] + TUMBLE_UI_CONFIG['ui_offset_y']
-        
-        size = TUMBLE_UI_CONFIG['square_size']
-        spacing = TUMBLE_UI_CONFIG['spacing']
-        
-        tumble_ratios = self.player.get_tumble_states()
-        
-        for i, ratio in enumerate(tumble_ratios):
-            rect_x = base_x + (size + spacing) * i
-            rect_y = base_y
-            
-            # 1. Draw Black Background
-            bg_rect = pygame.Rect(rect_x, rect_y, size, size)
-            pygame.draw.rect(screen, TUMBLE_UI_CONFIG['bg_color'], bg_rect)
-            
-            # 2. Calculate Fill
-            if ratio > 0:
-                fill_height = int(size * ratio)
-                # Bottom-to-up: y starts at bottom and goes up
-                fill_rect = pygame.Rect(rect_x, rect_y + (size - fill_height), size, fill_height)
-                
-                # 3. Choose color (Gold if ready, White if filling)
-                color = TUMBLE_UI_CONFIG['ready_color'] if ratio >= 1.0 else TUMBLE_UI_CONFIG['fill_color']
-                pygame.draw.rect(screen, color, fill_rect)
-                
-    def draw_death_menu(self, screen):
-        # Dim background further
-        dim_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        dim_surf.fill((0, 0, 0))
-        dim_surf.set_alpha(130)
-        screen.blit(dim_surf, (0, 0))
-
-        # Death Message
-        self.game.render_text(self.death_message, DEATH_SEQUENCE_CONFIG['message_color'], HEAD_FONT, 24, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 30))
-
-        mouse_pos = pygame.mouse.get_pos()
-
-        # Restart Button
-        restart_color = DEATH_SEQUENCE_CONFIG['button_color_active'] if self.restart_button_rect.collidepoint(mouse_pos) else DEATH_SEQUENCE_CONFIG['button_color_inactive']
-        restart_text_color = COLORS['black'] if self.restart_button_rect.collidepoint(mouse_pos) else COLORS['white']
-        pygame.draw.rect(screen, restart_color, self.restart_button_rect, border_radius=3)
-        self.game.render_text('RESTART', restart_text_color, PRIMARY_FONT, 10, self.restart_button_rect.center)
-
-        # Exit Button
-        exit_color = DEATH_SEQUENCE_CONFIG['button_color_active'] if self.exit_button_rect.collidepoint(mouse_pos) else DEATH_SEQUENCE_CONFIG['button_color_inactive']
-        exit_text_color = COLORS['black'] if self.exit_button_rect.collidepoint(mouse_pos) else COLORS['white']
-        pygame.draw.rect(screen, exit_color, self.exit_button_rect, border_radius=3)
-        self.game.render_text('EXIT', exit_text_color, PRIMARY_FONT, 10, self.exit_button_rect.center)
-    
-    
-
-    def apply_grayscale_bleed(self, screen, amount):
-        # Capture the screen, grayscale it, and blit with alpha
-        temp_surf = screen.copy()
-        
-        # Fast Grayscale using RGB weighting
-        array = pygame.surfarray.pixels3d(temp_surf)
-        weights = pygame.Vector3(0.299, 0.587, 0.114)
-        gray = (array * weights).sum(axis=2)
-        array[:, :, 0] = gray
-        array[:, :, 1] = gray
-        array[:, :, 2] = gray
-        del array 
-        
-        temp_surf.set_alpha(int(255 * amount))
-        screen.blit(temp_surf, (0, 0))
 
     def debugger(self, debug_list):
         # For ingame debugging visualization (displays accel, vel, etc.)
@@ -450,19 +361,8 @@ class Scene(State):
     def draw(self, screen):
         self.camera.draw(screen, self.draw_sprites, self)
         
-        if self.is_dead:
-            # Calculate bleed amount based on phase/timer
-            if self.death_phase == 'slowdown':
-                bleed_progress = 1.0 - (self.death_timer / DEATH_SEQUENCE_CONFIG['slowdown_duration'])
-            else:
-                bleed_progress = 1.0 # Full grayscale
-            
-            if bleed_progress > 0.05:
-                self.apply_grayscale_bleed(screen, bleed_progress)
-
-            # Draw Menu if Paused
-            if self.death_phase == 'paused':
-                self.draw_death_menu(screen)
+        # UI Manager handles HUD, hit overlay, and death effects
+        self.game.ui.draw(screen, self)
 
         self.transition.draw(screen)
                 

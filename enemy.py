@@ -287,7 +287,7 @@ class Wander:
     # State when enemy is moving towards a random waypoint
     def __init__(self, enemy):
         enemy.frame_index = 0
-        enemy.speed = 5
+        enemy.speed = 25
         
     def __str__(self):
         return "Wander"
@@ -321,8 +321,8 @@ class Chase:
     def __init__(self, enemy):
         enemy.frame_index = 0
         enemy.is_chasing = True
-        enemy.speed = 30
-        enemy.force = 1800
+        enemy.speed = 50
+        enemy.force = 2250
         
     def __str__(self):
         return "Chase"
@@ -337,7 +337,8 @@ class Chase:
     def update(self, dt, enemy):
         player_direction = enemy.detect_player()
         if not player_direction:
-            enemy.move_direction *= 0.9
+            # Frame-rate independent decay
+            enemy.move_direction *= math.exp(-10 * dt)
         else:
             enemy.steer_to_direction(player_direction, dt)
 

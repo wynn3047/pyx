@@ -14,10 +14,6 @@ class Camera(pygame.sprite.Group):
         self.delay = 5
         self.peek_limit = 3
 
-        # Stealth UI Assets
-        self.stealth_frame = pygame.image.load(STEALTH_CONFIG['frame_path']).convert_alpha()
-        self.stealth_fill = pygame.image.load(STEALTH_CONFIG['fill_path']).convert_alpha()
-
     # Capturing screen size for tilemap
     def get_scene_size(self, scene):
         # Open current scene's CSV to get its dimensions
@@ -61,114 +57,6 @@ class Camera(pygame.sprite.Group):
         
         return image
     
-    def draw_hearts(self, screen, scene):
-        if not scene.player or not hasattr(scene, 'heart_sprite'):
-            return
-
-        player = scene.player
-        heart_ratios = player.get_heart_states()
-
-        heart_size = HEART_CONFIG['heart_size']
-        spacing = HEART_CONFIG['heart_spacing']
-
-        total_width = (len(heart_ratios) * heart_size) + ((len(heart_ratios) - 1) * spacing)
-        start_x = SCREEN_WIDTH - total_width - HEART_CONFIG['ui_offset_x']
-        start_y = HEART_CONFIG['ui_offset_y']
-
-        for heart_index, ratio in enumerate(heart_ratios):
-            x = start_x + (heart_index * (heart_size + spacing))
-            y = start_y
-
-            # Always draw the full-sized black background heart
-            if hasattr(scene, 'black_heart_sprite'):
-                screen.blit(scene.black_heart_sprite, (x, y))
-
-            #  Draw the scaled red heart on top
-            if ratio > 0:
-                if ratio >= 1:
-                    screen.blit(scene.heart_sprite, (x, y))
-                else:
-                    # Dynamic scaling centered in the 16x16 slot
-                    scaled_w = int(heart_size * ratio)
-                    scaled_h = int(heart_size * ratio)
-
-                    if scaled_w > 2 and scaled_h > 2:
-                        scaled_heart = pygame.transform.scale(scene.heart_sprite, (scaled_w, scaled_h))
-
-                        # Gradual Darkening: Multiply color by ratio (255 = full bright, 0 = black)
-                        brightness = int(255 * ratio)
-                        scaled_heart.fill((brightness, brightness, brightness), special_flags=pygame.BLEND_RGB_MULT)
-
-                        # Calculate centered position
-                        offset_x = (heart_size - scaled_w) // 2
-                        offset_y = (heart_size - scaled_h) // 2
-                        screen.blit(scaled_heart, (x + offset_x, y + offset_y))
-
-
-    def draw_stealth_bar(self, screen, player):
-        if not player: return
-        
-        # Position: Center-left
-        frame_h = self.stealth_frame.get_height()
-        pos_x = 375
-        pos_y = 20 + (SCREEN_HEIGHT - frame_h) // 2
-        
-        screen.blit(self.stealth_frame, (pos_x, pos_y))
-        
-        ratio = player.stealth / player.max_stealth
-        if ratio >= 0:
-            fill_image = self.stealth_fill.copy()
-            full_w, full_h = fill_image.get_size()
-            
-            padding = 9
-            usable_h = full_h - (padding * 2)
-            
-            # Pulse when full
-            if player.is_stealth_ready:
-                fill_image.fill(COLORS['light_pink'], special_flags=pygame.BLEND_RGB_MULT)
-
-                pulse = (math.sin(pygame.time.get_ticks() * 0.02) + 1) / 2 # 0 to 1
-                alpha = 150 + int(105 * pulse) # 150 to 255
-                fill_image.set_alpha(alpha)
-            
-            current_fill_h = int(usable_h * ratio)
-            
-            clip_rect = pygame.Rect(0, (full_h - padding) - current_fill_h, full_w, current_fill_h)
-            
-            # Align the slice cuz my image has 9px margin
-            screen.blit(fill_image, (pos_x, pos_y + (full_h - padding - current_fill_h)), area=clip_rect)
-
-    def draw_tumble_ui(self, screen, scene):
-        if not scene.player or not hasattr(scene, 'tumble_frame'):
-            return
-
-        player = scene.player
-        icon_w, icon_h = scene.tumble_frame.get_size()
-        spacing = TUMBLE_UI_CONFIG['spacing']
-        
-        pos_y = HEART_CONFIG['ui_offset_y'] + HEART_CONFIG['heart_size'] + TUMBLE_UI_CONFIG['offset_y_below_hearts']
-        
-        for i in range(player.tumble_max_charges):
-            x = (SCREEN_WIDTH - HEART_CONFIG['ui_offset_x'] - icon_w) - (i * (icon_w + spacing))
-            
-            screen.blit(scene.tumble_frame, (x, pos_y))
-            
-            fill_surf = scene.tumble_fill.copy()
-            fill_w, fill_h = fill_surf.get_size()
-            
-            # If slot is full
-            if i < player.tumble_charges:
-                fill_surf.fill(COLORS['white'], special_flags=pygame.BLEND_RGB_MULT)
-                screen.blit(fill_surf, (x, pos_y))
-            
-            elif i == player.tumble_charges:
-                ratio = 1.0 - (player.tumble_cooldown_timer / player.tumble_cooldown)
-                fill_surf.set_alpha(150)
-                if ratio > 0:
-                    current_w = int(fill_w * ratio)
-                    clip_rect = pygame.Rect(fill_w - current_w, 0, current_w, fill_h)
-                    screen.blit(fill_surf, (x + (fill_w - current_w), pos_y), area=clip_rect)
-
     def show_hitbox(self, screen, sprite, offset):
         # Visual hitbox
         from player import Player
@@ -247,14 +135,3 @@ class Camera(pygame.sprite.Group):
 
                     if DEBUG.HITBOXES:
                         self.show_hitbox(screen, sprite, draw_offset)
-        
-        self.draw_hearts(screen, scene)
-        self.draw_tumble_ui(screen, scene)
-        self.draw_stealth_bar(screen, scene.player)
-
-        # Full-screen red flash if player is hit while at low HP (<= 50%)
-        if scene.player and scene.player.is_low_hp and scene.player.hit_flash_timer > 0:
-            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-            overlay.fill(COLORS['red'])
-            overlay.set_alpha(70) # 0-255 opacity
-            screen.blit(overlay, (0, 0))

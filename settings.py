@@ -41,8 +41,8 @@ COLORS = {
 
 HP_CONFIG = {
     'player_max_hp': 200,
-    'player_hp_regen': 6,
-    'player_regen_delay': 7, # Regen delay after hit
+    'player_hp_regen': 1.5,
+    'player_regen_delay': 6, # Regen delay after hit
     'invulnerability_duration': 0.67, # For invicibility frames
     'hit_flash_duration': 0.1,
     'hit_knockback': 80, # Default fallback
@@ -60,7 +60,7 @@ PLAYER_COMBAT_CONFIG = {
     'proj_burst_count': 1,       
     'proj_burst_delay': 0.1,     
     'proj_ricochet_count': 0,
-    'proj_spawn_offset': 12
+    'proj_spawn_offset': 7
     }
 
 STEALTH_CONFIG = {

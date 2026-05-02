@@ -12,8 +12,8 @@ class Player(GameCharacter):
         self.combat_hitbox.center = self.rect.center
         self.hit_flash_color = COLORS['red']
         self.state = Idle(self)
-        self.force = 2250
-        self.speed = 70
+        self.force = 2400
+        self.speed = 75
         # Tumble cooldown and usage
         self.tumble_charges = 2
         self.tumble_max_charges = 2
@@ -397,9 +397,9 @@ class Tumble:
         self.timer -= dt
         player.animate(f'tumble-{player.get_direction()}', 18, dt, False) # Play tumble animation once
 
-        player.physics(dt, 5) # Apply physics with low friction to slide
         player.accel = vect() # No acceleration during tumble
         player.vel = self.vel # Maintain dash velocity towards target
+        player.physics(dt, 5, player.tumble_speed) # Apply physics with low friction to slide
         
 class Death:
     # Death state: Play death animation, no movement, no state transitions

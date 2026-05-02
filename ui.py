@@ -1,0 +1,165 @@
+import pygame
+import math
+import random
+from settings import *
+
+class UI:
+    def __init__(self, game):
+        self.game = game
+        
+        self.heart_sprite = pygame.image.load(HP_CONFIG['heart_path']).convert_alpha()
+        self.black_heart_sprite = self.heart_sprite.copy()
+        self.black_heart_sprite.fill(COLORS['black'], special_flags=pygame.BLEND_RGB_MULT)
+
+        self.tumble_frame = pygame.image.load(TUMBLE_UI_CONFIG['frame_path']).convert_alpha()
+        self.tumble_fill = pygame.image.load(TUMBLE_UI_CONFIG['fill_path']).convert_alpha()
+        
+        self.stealth_frame = pygame.image.load(STEALTH_CONFIG['frame_path']).convert_alpha()
+        self.stealth_fill = pygame.image.load(STEALTH_CONFIG['fill_path']).convert_alpha()
+
+        self.restart_button_rect = pygame.Rect(0, 0, 80, 20)
+        self.restart_button_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 20)
+        
+        self.exit_button_rect = pygame.Rect(0, 0, 80, 20)
+        self.exit_button_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 45)
+
+    def draw_hearts(self, screen, player):
+        heart_ratios = player.get_heart_states()
+        heart_size = HEART_CONFIG['heart_size']
+        spacing = HEART_CONFIG['heart_spacing']
+
+        total_width = (len(heart_ratios) * heart_size) + ((len(heart_ratios) - 1) * spacing)
+        start_x = SCREEN_WIDTH - total_width - HEART_CONFIG['ui_offset_x']
+        start_y = HEART_CONFIG['ui_offset_y']
+
+        for heart_index, ratio in enumerate(heart_ratios):
+            x = start_x + (heart_index * (heart_size + spacing))
+            y = start_y
+
+            screen.blit(self.black_heart_sprite, (x, y))
+
+            if ratio > 0:
+                if ratio >= 1:
+                    screen.blit(self.heart_sprite, (x, y))
+                else:
+                    scaled_w = int(heart_size * ratio)
+                    scaled_h = int(heart_size * ratio)
+
+                    if scaled_w > 2 and scaled_h > 2:
+                        scaled_heart = pygame.transform.scale(self.heart_sprite, (scaled_w, scaled_h))
+                        brightness = int(255 * ratio)
+                        scaled_heart.fill((brightness, brightness, brightness), special_flags=pygame.BLEND_RGB_MULT)
+
+                        offset_x = (heart_size - scaled_w) // 2
+                        offset_y = (heart_size - scaled_h) // 2
+                        screen.blit(scaled_heart, (x + offset_x, y + offset_y))
+
+    def draw_tumble_ui(self, screen, player):
+        icon_w, icon_h = self.tumble_frame.get_size()
+        spacing = TUMBLE_UI_CONFIG['spacing']
+        pos_y = HEART_CONFIG['ui_offset_y'] + HEART_CONFIG['heart_size'] + TUMBLE_UI_CONFIG['offset_y_below_hearts']
+        
+        for i in range(player.tumble_max_charges):
+            x = (SCREEN_WIDTH - HEART_CONFIG['ui_offset_x'] - icon_w) - (i * (icon_w + spacing))
+            screen.blit(self.tumble_frame, (x, pos_y))
+            
+            fill_surf = self.tumble_fill.copy()
+            fill_w, fill_h = fill_surf.get_size()
+            
+            if i < player.tumble_charges:
+                fill_surf.fill(COLORS['white'], special_flags=pygame.BLEND_RGB_MULT)
+                screen.blit(fill_surf, (x, pos_y))
+            elif i == player.tumble_charges:
+                ratio = 1.0 - (player.tumble_cooldown_timer / player.tumble_cooldown)
+                fill_surf.set_alpha(150)
+                if ratio > 0:
+                    current_w = int(fill_w * ratio)
+                    clip_rect = pygame.Rect(fill_w - current_w, 0, current_w, fill_h)
+                    screen.blit(fill_surf, (x + (fill_w - current_w), pos_y), area=clip_rect)
+
+    def draw_stealth_bar(self, screen, player):
+        frame_h = self.stealth_frame.get_height()
+        pos_x = 375
+        pos_y = 20 + (SCREEN_HEIGHT - frame_h) // 2
+        
+        screen.blit(self.stealth_frame, (pos_x, pos_y))
+        
+        ratio = player.stealth / player.max_stealth
+        if ratio >= 0:
+            fill_image = self.stealth_fill.copy()
+            full_w, full_h = fill_image.get_size()
+            padding = 9
+            usable_h = full_h - (padding * 2)
+            
+            if player.is_stealth_ready:
+                fill_image.fill(COLORS['light_pink'], special_flags=pygame.BLEND_RGB_MULT)
+                pulse = (math.sin(pygame.time.get_ticks() * 0.02) + 1) / 2
+                alpha = 150 + int(105 * pulse)
+                fill_image.set_alpha(alpha)
+            
+            current_fill_h = int(usable_h * ratio)
+            clip_rect = pygame.Rect(0, (full_h - padding) - current_fill_h, full_w, current_fill_h)
+            screen.blit(fill_image, (pos_x, pos_y + (full_h - padding - current_fill_h)), area=clip_rect)
+
+    def draw_hit_overlay(self, screen, player):
+        if player and player.is_low_hp and hasattr(player, 'hit_flash_timer') and player.hit_flash_timer > 0:
+            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            overlay.fill(COLORS['red'])
+            overlay.set_alpha(70)
+            screen.blit(overlay, (0, 0))
+
+    def apply_grayscale_bleed(self, screen, amount):
+        temp_surf = screen.copy()
+        array = pygame.surfarray.pixels3d(temp_surf)
+        weights = pygame.Vector3(0.299, 0.587, 0.114)
+        gray = (array * weights).sum(axis=2)
+        array[:, :, 0] = gray
+        array[:, :, 1] = gray
+        array[:, :, 2] = gray
+        del array 
+        temp_surf.set_alpha(int(255 * amount))
+        screen.blit(temp_surf, (0, 0))
+
+    def draw_death_menu(self, screen, scene):
+        # Dim background
+        dim_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        dim_surf.fill((0, 0, 0))
+        dim_surf.set_alpha(130)
+        screen.blit(dim_surf, (0, 0))
+
+        # Message random
+        self.game.render_text(scene.death_message, DEATH_SEQUENCE_CONFIG['message_color'], HEAD_FONT, 24, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 30))
+
+        mouse_pos = pygame.mouse.get_pos()
+
+        restart_color = DEATH_SEQUENCE_CONFIG['button_color_active'] if self.restart_button_rect.collidepoint(mouse_pos) else DEATH_SEQUENCE_CONFIG['button_color_inactive']
+        restart_text_color = COLORS['black'] if self.restart_button_rect.collidepoint(mouse_pos) else COLORS['white']
+        pygame.draw.rect(screen, restart_color, self.restart_button_rect, border_radius=3)
+        self.game.render_text('RESTART', restart_text_color, PRIMARY_FONT, 10, self.restart_button_rect.center)
+
+        exit_color = DEATH_SEQUENCE_CONFIG['button_color_active'] if self.exit_button_rect.collidepoint(mouse_pos) else DEATH_SEQUENCE_CONFIG['button_color_inactive']
+        exit_text_color = COLORS['black'] if self.exit_button_rect.collidepoint(mouse_pos) else COLORS['white']
+        pygame.draw.rect(screen, exit_color, self.exit_button_rect, border_radius=3)
+        self.game.render_text('EXIT', exit_text_color, PRIMARY_FONT, 10, self.exit_button_rect.center)
+
+    def draw(self, screen, scene):
+        player = scene.player
+        if not player: return
+
+        self.draw_hit_overlay(screen, player)
+
+        if scene.is_dead:
+            if scene.death_phase == 'slowdown':
+                bleed_progress = 1.0 - (scene.death_timer / DEATH_SEQUENCE_CONFIG['slowdown_duration'])
+            else:
+                bleed_progress = 1.0
+            
+            if bleed_progress > 0.05:
+                self.apply_grayscale_bleed(screen, bleed_progress)
+
+            if scene.death_phase == 'paused':
+                self.draw_death_menu(screen, scene)
+        
+        self.draw_hearts(screen, player)
+        self.draw_tumble_ui(screen, player)
+        self.draw_stealth_bar(screen, player)
