@@ -48,6 +48,12 @@ class Camera(pygame.sprite.Group):
             image.blit(flash_surf, (0, 0))
             return image
         
+        if hasattr(sprite, 'highlighted') and sprite.highlighted:
+            mask = pygame.mask.from_surface(image)
+            highlight_surf = mask.to_surface(setcolor=COLORS['white'], unsetcolor=(0, 0, 0, 0))
+            highlight_surf.set_alpha(100)
+            image.blit(highlight_surf, (0, 0))
+
         if hasattr(sprite, 'invulnerable') and sprite.invulnerable and hasattr(sprite, 'transparent_flicker_timer'):
             flicker_cycle = sprite.transparent_flicker_timer % (TRANSPARENCY_FLICKER_CONFIG['flicker_interval'] * 2)
             if flicker_cycle < TRANSPARENCY_FLICKER_CONFIG['flicker_interval']:

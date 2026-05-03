@@ -9,9 +9,9 @@ HEALTH/DEFENSE
 
 
 ATTACK/STEALTH
-- Increase throw dmg and vel
-- Increase attack speed rate
-- Increment stealth strike multiplier but reduce stealth regen
+- Increase throw dmg and knockback
+- Increase attack speed rate and vel
+- Increment stealth strike multiplier
 - Decrease normal attack stealth reduction
 - +1 Projectile count with +20 spread
 - +1 Burst count 

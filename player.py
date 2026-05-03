@@ -13,9 +13,9 @@ class Player(GameCharacter):
         self.hit_flash_color = COLORS['red']
         self.state = Idle(self)
         self.force = 2400
-        self.speed = 75
+        self.speed = 80
         # Tumble cooldown and usage
-        self.tumble_charges = 2
+        self.tumble_charges = 0
         self.tumble_max_charges = 2
         self.tumble_cooldown = 1.5
         self.tumble_cooldown_timer = 0

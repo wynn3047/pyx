@@ -321,7 +321,7 @@ class Chase:
     def __init__(self, enemy):
         enemy.frame_index = 0
         enemy.is_chasing = True
-        enemy.speed = 50
+        enemy.speed = 55
         enemy.force = 2250
         
     def __str__(self):

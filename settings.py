@@ -24,6 +24,7 @@ INPUTS = {
     'scroll_up' : False,
     'scroll_down' : False,
     'enter': False,
+    'e': False,
     'f8': False
 }
 

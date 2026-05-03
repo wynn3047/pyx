@@ -55,6 +55,8 @@ class Game:
                     INPUTS['left'] = True
                 elif event.key in (pygame.K_RIGHT, pygame.K_d):
                     INPUTS['right'] = True
+                elif event.key == pygame.K_e:
+                    INPUTS['e'] = True
                 elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     INPUTS['enter'] = True
                 elif event.key == pygame.K_F8:
@@ -76,6 +78,8 @@ class Game:
                     INPUTS['left'] = False
                 elif event.key in (pygame.K_RIGHT, pygame.K_d):
                     INPUTS['right'] = False
+                elif event.key == pygame.K_e:
+                    INPUTS['e'] = False
                 elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     INPUTS['enter'] = False
                 elif event.key == pygame.K_F8:

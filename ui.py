@@ -79,8 +79,8 @@ class UI:
 
     def draw_stealth_bar(self, screen, player):
         frame_h = self.stealth_frame.get_height()
-        pos_x = 375
-        pos_y = 20 + (SCREEN_HEIGHT - frame_h) // 2
+        pos_x = 10
+        pos_y = (SCREEN_HEIGHT - frame_h) // 2
         
         screen.blit(self.stealth_frame, (pos_x, pos_y))
         
@@ -107,6 +107,23 @@ class UI:
             overlay.fill(COLORS['red'])
             overlay.set_alpha(70)
             screen.blit(overlay, (0, 0))
+
+    def draw_interaction_bars(self, screen, scene):
+        from objects import Chest
+        for sprite in scene.draw_sprites:
+            if isinstance(sprite, Chest) and sprite.interaction_timer > 0 and not sprite.is_open:
+                bar_width = 16
+                bar_height = 2
+                progress = sprite.interaction_timer / sprite.interaction_duration
+                
+                offset = scene.camera.offset
+                x = sprite.rect.left - offset.x
+                y = sprite.rect.top - offset.y 
+                
+                # Draw background
+                pygame.draw.rect(screen, COLORS['black'], (x, y, bar_width, bar_height))
+                # Draw progress
+                pygame.draw.rect(screen, COLORS['white'], (x, y, bar_width * progress, bar_height))
 
     def apply_grayscale_bleed(self, screen, amount):
         temp_surf = screen.copy()
@@ -163,3 +180,4 @@ class UI:
         self.draw_hearts(screen, player)
         self.draw_tumble_ui(screen, player)
         self.draw_stealth_bar(screen, player)
+        self.draw_interaction_bars(screen, scene)

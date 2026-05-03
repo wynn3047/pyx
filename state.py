@@ -4,7 +4,7 @@ from settings import *
 from camera import Camera
 from transition import Transition
 from player import Player
-from objects import Collider,Object, Wall, Holes
+from objects import Collider,Object, Wall, Holes, Chest
 from pytmx.util_pygame import load_pygame
 
 class State:
@@ -250,6 +250,11 @@ class Scene(State):
                                   (rx, ry), 'blocks', enemy_type)
                             spawned = True
 
+        if "interactables" in layers:
+            for obj in self.tmx_data.get_layer_by_name('interactables'):
+                if obj.name == 'chest':
+                    Chest(self, [self.update_sprites, self.draw_sprites, self.block_sprites], 
+                          (obj.x, obj.y), 'blocks', self.tmx_data)
 
         # Re-apply saved states to the group of enemies
         saved_data = self.game.scene_states.get(str(self.current_scene))
@@ -360,10 +365,7 @@ class Scene(State):
 
     def draw(self, screen):
         self.camera.draw(screen, self.draw_sprites, self)
-        
-        # UI Manager handles HUD, hit overlay, and death effects
-        self.game.ui.draw(screen, self)
-
+        self.game.ui.draw(screen, self) 
         self.transition.draw(screen)
                 
         #  Debugger
