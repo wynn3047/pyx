@@ -41,21 +41,21 @@ COLORS = {
     
 }
 
-HP_CONFIG = {
-    'player_max_hp': 200,
-    'player_hp_regen': 1.5,
-    'player_regen_delay': 6, # Regen delay after hit
-    'invulnerability_duration': 0.67, # Defau
+HP_CONFIG = { # + invincibility and knock
+    'player_max_hp' : 200,
+    'player_hp_regen' : 1.5,
+    'player_regen_delay' : 6, # Regen delay after hit
+    'invulnerability_duration' : 0.67, # Defau
     'hit_flash_duration': 0.1,
-    'hit_knockback': 80, # Default fallback
-    'enemy_contact_knockback': 120,
-    'player_dagger_knockback': 30,
+    'knockback_stun' : 0.58,
+    'hit_knockback' : 90, # Default fallback
     'transparency_alpha': 100,
-    'flicker_interval': 0.08,
-    'heart_path': 'assets/ui/heart.png'     
+    'flicker_interval' : 0.08,
+    'heart_path' : 'assets/ui/heart.png'     
 }
 
 PLAYER_COMBAT_CONFIG = {
+    'player_dagger_knockback': 60,
     'proj_pierce_count': 0,      
     'proj_count': 1,             
     'proj_spread_angle': 20,     
@@ -87,6 +87,7 @@ HEART_CONFIG = {
     'ui_offset_x': 10,            
     'ui_offset_y': 10,            
 }
+
 DEATH_SEQUENCE_CONFIG = {
     'slowdown_duration': 3,
     'slowdown_multiplier': 0.4,
@@ -134,7 +135,7 @@ UPGRADE_DATA = {
             '+1 Projectile count +20 spread',
             '+1 Burst count',
             '+1 Pierce',
-            '+1 Projectile'
+            '+1 Ricochet'
         ]
     },
     'green': {
@@ -144,7 +145,7 @@ UPGRADE_DATA = {
             'Increase Hp regen',
             'Reduce Hp delay timer',
             'Increase invulnerability duration',
-            'Decrease stun duration'
+            'Decrease knockback stun'
         ]
     },
     'blue': {
@@ -152,8 +153,8 @@ UPGRADE_DATA = {
         'options': [
             'Reduce tumble cd',
             '+1 Tumble charge',
-            '+10 speed cap',
-            '+75 tumble range'
+            '+5 speed cap',
+            '+60 tumble range'
         ]
     }
 }

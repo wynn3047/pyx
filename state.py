@@ -393,6 +393,57 @@ class Scene(State):
         for i in range(3):
             self.upgrade_rects.append(pygame.Rect(start_x + i * (card_w + spacing), y, card_w, card_h))
 
+    def apply_upgrade(self, upgrade):
+        p = self.player
+        desc = upgrade['desc']
+
+        # Red Upgrades
+        if desc == 'Increase throw dmg and knockback':
+            p.throw_dmg_min += 5
+            p.throw_dmg_max += 5
+            p.throw_knockback += 20
+        elif desc == 'Increase attack speed and vel':
+            p.throw_rate += 1.5
+            p.throw_vel += 50
+        elif desc == 'Increment stealth strike multiplier':
+            p.stealth_damage_mult += 0.2
+            p.stealth_velocity_mult += 0.1
+        elif desc == 'Decrease normal attack stealth reduction':
+            p.stealth_attack_consumption = max(6, p.stealth_attack_consumption - 6)
+        elif desc == '+1 Projectile count +20 spread':
+            p.proj_count += 1
+            p.proj_spread += 20
+        elif desc == '+1 Burst count':
+            p.proj_burst_count += 1
+        elif desc == '+1 Pierce':
+            p.proj_pierce += 1
+        elif desc == '+1 Ricochet':
+            p.proj_ricochet += 1
+
+        # Green Upgrades
+        elif desc == 'Increase max hp +50':
+            p.max_hp += 50
+            p.hp += 50
+        elif desc == 'Increase Hp regen':
+            p.hp_regen += 0.5
+        elif desc == 'Reduce Hp delay timer':
+            p.regen_delay_max = max(0.5, p.regen_delay_max - 1.0)
+        elif desc == 'Increase invulnerability duration':
+            p.invulnerability_duration += 0.2
+        elif desc == 'Decrease knockback stun':
+            p.knockback_stun = max(0.1, p.knockback_stun - 0.1)
+
+        # Blue Upgrades
+        elif desc == 'Reduce tumble cd':
+            p.tumble_cooldown = max(0.4, p.tumble_cooldown - 0.2)
+        elif desc == '+1 Tumble charge':
+            p.tumble_max_charges += 1
+            p.tumble_charges += 1
+        elif desc == '+5 speed cap':
+            p.speed += 5
+        elif desc == '+60 tumble range':
+            p.tumble_speed += 60
+
     def update(self, dt):
         # Handle Upgrade Pause
         if self.is_upgrading:
@@ -404,6 +455,8 @@ class Scene(State):
                     self.hovered_upgrade = i
                     if INPUTS['left_click']:
                         # Selection made
+                        selected = self.upgrade_options[i]
+                        self.apply_upgrade(selected)
                         self.is_upgrading = False
                         self.game.reset_inputs()
                         break

@@ -14,25 +14,29 @@ class Player(GameCharacter):
         self.state = Idle(self)
         self.force = 2400
         self.speed = 80
+        
         # Tumble cooldown and usage
         self.tumble_charges = 0
         self.tumble_max_charges = 2
         self.tumble_cooldown = 1.5
         self.tumble_cooldown_timer = 0
         self.tumble_speed = 350
+        
         # Player HP & Invincibility
         self.hp = HP_CONFIG['player_max_hp']
         self.max_hp = HP_CONFIG['player_max_hp']
-        
         self.regen_delay_timer = 0 # Cooldown after taking  dmg
+        self.regen_delay_max = HP_CONFIG['player_regen_delay']
         self.hp_regen = HP_CONFIG['player_hp_regen']
-        
+        self.knockback_stun = HP_CONFIG['knockback_stun']
+        self.invulnerability_duration = HP_CONFIG['invulnerability_duration']
+
         self.throw_vel = 350
-        self.throw_rate = 15.5
+        self.throw_rate = 14
         self.throw_dmg_min = 10
         self.throw_dmg_max = 20
         self.throw_damage = random.uniform(self.throw_dmg_min, self.throw_dmg_max)
-
+        self.throw_knockback = PLAYER_COMBAT_CONFIG['player_dagger_knockback']
         # Combat Upgrades
         self.proj_pierce = PLAYER_COMBAT_CONFIG['proj_pierce_count']
         self.proj_count = PLAYER_COMBAT_CONFIG['proj_count']
@@ -46,6 +50,12 @@ class Player(GameCharacter):
         self.stealth = 0
         self.max_stealth = STEALTH_CONFIG['max_stealth']
         self.stealth_regen_delay_timer = 0
+        self.stealth_damage_mult = STEALTH_CONFIG['damage_mult']
+        self.stealth_velocity_mult = STEALTH_CONFIG['velocity_mult']
+        self.stealth_count_add = STEALTH_CONFIG['count_add']
+        self.stealth_pierce_add = STEALTH_CONFIG['pierce_add']
+        self.stealth_ricochet_add = STEALTH_CONFIG['ricochet_add']
+        self.stealth_attack_consumption = STEALTH_CONFIG['attack_consumption']
 
     @property
     def is_stealth_ready(self):
@@ -67,8 +77,7 @@ class Player(GameCharacter):
 
     def take_damage(self, amount, knockback_dir=None, knockback_force=None, knockback_stun=0.3):
         super().take_damage(amount, knockback_dir, knockback_force, knockback_stun)
-        self.regen_delay_timer = HP_CONFIG['player_regen_delay'] 
-
+        self.regen_delay_timer = self.regen_delay_max
     def update_regen(self, dt):
         # Passive HP regen during only Idle/Run states
         if not isinstance(self.state, (Idle, Run)):
@@ -137,11 +146,31 @@ class Player(GameCharacter):
           # Return player data
           return {
             'hp': self.hp,
+            'max_hp': self.max_hp,
+            'hp_regen': self.hp_regen,
+            'regen_delay_max': self.regen_delay_max,
+            'invulnerability_duration': self.invulnerability_duration,
             'tumble_charges': self.tumble_charges,
+            'tumble_max_charges': self.tumble_max_charges,
+            'tumble_cooldown': self.tumble_cooldown,
+            'tumble_speed': self.tumble_speed,
             'tumble_cooldown_timer': self.tumble_cooldown_timer,
             'regen_delay_timer': self.regen_delay_timer,
             'stealth': self.stealth,
             'stealth_regen_delay_timer': self.stealth_regen_delay_timer,
+            'stealth_damage_mult': self.stealth_damage_mult,
+            'stealth_velocity_mult': self.stealth_velocity_mult,
+            'stealth_count_add': self.stealth_count_add,
+            'stealth_pierce_add': self.stealth_pierce_add,
+            'stealth_ricochet_add': self.stealth_ricochet_add,
+            'stealth_attack_consumption': self.stealth_attack_consumption,
+            'speed': self.speed,
+            'knockback_stun': self.knockback_stun,
+            'throw_dmg_min': self.throw_dmg_min,
+            'throw_dmg_max': self.throw_dmg_max,
+            'throw_rate': self.throw_rate,
+            'throw_vel': self.throw_vel,
+            'throw_knockback': self.throw_knockback,
             'proj_count': self.proj_count,
             'proj_pierce': self.proj_pierce,
             'proj_ricochet': self.proj_ricochet,
@@ -154,12 +183,32 @@ class Player(GameCharacter):
         if not data:
             return
         
-        self.hp = data.get('hp', self.max_hp) 
+        self.hp = data.get('hp', self.hp)
+        self.max_hp = data.get('max_hp', self.max_hp)
+        self.hp_regen = data.get('hp_regen', self.hp_regen)
+        self.regen_delay_max = data.get('regen_delay_max', self.regen_delay_max)
+        self.invulnerability_duration = data.get('invulnerability_duration', self.invulnerability_duration)
         self.tumble_charges = data.get('tumble_charges', self.tumble_charges)
+        self.tumble_max_charges = data.get('tumble_max_charges', self.tumble_max_charges)
+        self.tumble_cooldown = data.get('tumble_cooldown', self.tumble_cooldown)
+        self.tumble_speed = data.get('tumble_speed', self.tumble_speed)
         self.tumble_cooldown_timer = data.get('tumble_cooldown_timer', self.tumble_cooldown_timer)
         self.regen_delay_timer = data.get('regen_delay_timer', self.regen_delay_timer)
-        self.stealth = data.get('stealth', 0)
-        self.stealth_regen_delay_timer = data.get('stealth_regen_delay_timer', 0)
+        self.stealth = data.get('stealth', self.stealth)
+        self.stealth_regen_delay_timer = data.get('stealth_regen_delay_timer', self.stealth_regen_delay_timer)
+        self.stealth_damage_mult = data.get('stealth_damage_mult', self.stealth_damage_mult)
+        self.stealth_velocity_mult = data.get('stealth_velocity_mult', self.stealth_velocity_mult)
+        self.stealth_count_add = data.get('stealth_count_add', self.stealth_count_add)
+        self.stealth_pierce_add = data.get('stealth_pierce_add', self.stealth_pierce_add)
+        self.stealth_ricochet_add = data.get('stealth_ricochet_add', self.stealth_ricochet_add)
+        self.stealth_attack_consumption = data.get('stealth_attack_consumption', self.stealth_attack_consumption)
+        self.speed = data.get('speed', self.speed)
+        self.knockback_stun = data.get('knockback_stun', self.knockback_stun)
+        self.throw_dmg_min = data.get('throw_dmg_min', self.throw_dmg_min)
+        self.throw_dmg_max = data.get('throw_dmg_max', self.throw_dmg_max)
+        self.throw_rate = data.get('throw_rate', self.throw_rate)
+        self.throw_vel = data.get('throw_vel', self.throw_vel)
+        self.throw_knockback = data.get('throw_knockback', self.throw_knockback)
         self.proj_count = data.get('proj_count', self.proj_count)
         self.proj_pierce = data.get('proj_pierce', self.proj_pierce)
         self.proj_ricochet = data.get('proj_ricochet', self.proj_ricochet)
@@ -170,7 +219,7 @@ class Player(GameCharacter):
         from projectiles import Projectile
         
         # Base stats
-        damage = self.throw_damage
+        damage = random.uniform(self.throw_dmg_min, self.throw_dmg_max)
         speed = self.throw_vel
         count = self.proj_count
         pierce = self.proj_pierce
@@ -178,11 +227,12 @@ class Player(GameCharacter):
         
         # Apply Stealth Strike Multipliers
         if is_stealth_strike:
-            damage *= STEALTH_CONFIG['damage_mult']
-            speed *= STEALTH_CONFIG['velocity_mult']
-            count += STEALTH_CONFIG['count_add']
-            pierce += STEALTH_CONFIG['pierce_add']
-            ricochet += STEALTH_CONFIG['ricochet_add']
+            damage *= self.stealth_damage_mult
+            speed *= self.stealth_velocity_mult
+            count += self.stealth_count_add
+            pierce += self.stealth_pierce_add
+            ricochet += self.stealth_ricochet_add
+
 
         # Base direction to target
         base_direction = (target_world_pos - self.pos)
@@ -212,7 +262,7 @@ class Player(GameCharacter):
                 direction,
                 speed=speed,
                 damage=damage,
-                knockback_force=HP_CONFIG['player_dagger_knockback'],
+                knockback_force=self.throw_knockback,
                 pierce_count=pierce,
                 ricochet_count=ricochet,
                 sprite_path='assets\characters\player\weapon\dagger.png'

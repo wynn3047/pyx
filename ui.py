@@ -235,7 +235,13 @@ class UI:
         if not player: return
 
         self.draw_hit_overlay(screen, player)
-
+        
+        self.draw_hearts(screen, player)
+        self.draw_tumble_ui(screen, player)
+        self.draw_stealth_bar(screen, player)
+        self.draw_interaction_bars(screen, scene)
+        self.draw_upgrade_overlay(screen, scene)
+        
         if scene.is_dead:
             if scene.death_phase == 'slowdown':
                 bleed_progress = 1.0 - (scene.death_timer / DEATH_SEQUENCE_CONFIG['slowdown_duration'])
@@ -247,9 +253,3 @@ class UI:
 
             if scene.death_phase == 'paused':
                 self.draw_death_menu(screen, scene)
-        
-        self.draw_hearts(screen, player)
-        self.draw_tumble_ui(screen, player)
-        self.draw_stealth_bar(screen, player)
-        self.draw_interaction_bars(screen, scene)
-        self.draw_upgrade_overlay(screen, scene)

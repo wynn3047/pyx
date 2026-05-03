@@ -22,6 +22,7 @@ class Enemy(GameCharacter):
         self.hp = 40
         self.max_hp = 40
         self.invulnerability_duration = 0
+        self.contact_knockback = 200
         
         # Wandering logic
         self.wander_waypoint = None
@@ -32,9 +33,7 @@ class Enemy(GameCharacter):
         # Aggro / Memory
         self.aggro_timer = 0
         self.aggro_duration = 4 # Stay aggroed for 4s after hit or detection
-        
         self.spawn_pos = vect(pos)
-        self.contact_knockback = HP_CONFIG['enemy_contact_knockback']
         self.state = EnemyIdle(self)  # Initial AI state
         self.frict = 10 
         self.knockback_speed = 50
