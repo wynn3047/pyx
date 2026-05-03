@@ -24,16 +24,17 @@ INPUTS = {
     'scroll_up' : False,
     'scroll_down' : False,
     'enter': False,
-    'e': False,
-    'f8': False
+    'e' : False,
+    'f8' : False
 }
 
 COLORS = {
     'black' : (0, 0, 0),
     'white' : (255, 255, 255),
-    'red' : (70, 0, 11),
-    'green' : (0, 255, 0), 
-    'blue' : (69,78,99),
+    'red' : (227, 0, 0),
+    'medium_red' : (70, 0, 11),
+    'green' : (67, 145, 55), 
+    'blue' : (27, 27, 255),
     'charcoal_grey': (24, 29, 35),
     'medium_navy': (19,21,32),
     'light_pink': (249, 159, 255)
@@ -44,7 +45,7 @@ HP_CONFIG = {
     'player_max_hp': 200,
     'player_hp_regen': 1.5,
     'player_regen_delay': 6, # Regen delay after hit
-    'invulnerability_duration': 0.67, # For invicibility frames
+    'invulnerability_duration': 0.67, # Defau
     'hit_flash_duration': 0.1,
     'hit_knockback': 80, # Default fallback
     'enemy_contact_knockback': 120,
@@ -120,6 +121,41 @@ TUMBLE_UI_CONFIG = {
     'spacing': 1, 
     'frame_path': 'assets/ui/tumble_unfilled.png',
     'fill_path': 'assets/ui/tumble_filled.png'
+}
+
+UPGRADE_DATA = {
+    'red': {
+        'header': 'ATTACK',
+        'options': [
+            'Increase throw dmg and knockback',
+            'Increase attack speed and vel',
+            'Increment stealth strike multiplier',
+            'Decrease normal attack stealth reduction',
+            '+1 Projectile count +20 spread',
+            '+1 Burst count',
+            '+1 Pierce',
+            '+1 Projectile'
+        ]
+    },
+    'green': {
+        'header': 'DEFENSE',
+        'options': [
+            'Increase max hp +50',
+            'Increase Hp regen',
+            'Reduce Hp delay timer',
+            'Increase invulnerability duration',
+            'Decrease stun duration'
+        ]
+    },
+    'blue': {
+        'header': 'MOVEMENT',
+        'options': [
+            'Reduce tumble cd',
+            '+1 Tumble charge',
+            '+10 speed cap',
+            '+75 tumble range'
+        ]
+    }
 }
 
 # Layer order top to bottom

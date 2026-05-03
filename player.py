@@ -10,7 +10,7 @@ class Player(GameCharacter):
         self.hitbox = self.rect.copy().inflate(-self.rect.width + 9, -self.rect.height + 1) # Custom mvment hitbox for player
         self.combat_hitbox = self.rect.copy().inflate(-5, -1) # Custom for combat hitbox
         self.combat_hitbox.center = self.rect.center
-        self.hit_flash_color = COLORS['red']
+        self.hit_flash_color = COLORS['medium_red']
         self.state = Idle(self)
         self.force = 2400
         self.speed = 80
@@ -29,7 +29,9 @@ class Player(GameCharacter):
         
         self.throw_vel = 350
         self.throw_rate = 15.5
-        self.throw_damage = random.uniform(10, 20)
+        self.throw_dmg_min = 10
+        self.throw_dmg_max = 20
+        self.throw_damage = random.uniform(self.throw_dmg_min, self.throw_dmg_max)
 
         # Combat Upgrades
         self.proj_pierce = PLAYER_COMBAT_CONFIG['proj_pierce_count']

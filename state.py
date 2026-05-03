@@ -130,6 +130,7 @@ class Scene(State):
         self.draw_sprites = pygame.sprite.Group()
         self.block_sprites = pygame.sprite.Group()
         self.enemy_sprites = pygame.sprite.Group() 
+        self.chest_sprites = pygame.sprite.Group() 
         self.exit_sprites = pygame.sprite.Group() 
         
         self.player = None
@@ -141,6 +142,11 @@ class Scene(State):
         
         # Death sequence
         self.is_dead = False
+        self.is_upgrading = False
+        self.upgrade_options = [] # List of types like ['red', 'green', 'blue']
+        self.upgrade_rects = []   # List of Rects for clicking
+        self.hovered_upgrade = None # Index of card being hovered
+        
         self.death_phase = None # slowdown-> blacken-> pause
         self.death_timer = 0
         self.death_message = None
@@ -152,9 +158,12 @@ class Scene(State):
         
         # Only save enemies that have HP > 0 to ensure dead ones stay dead
         enemy_states = [enemy.save_data() for enemy in self.enemy_sprites if enemy.hp > 0]
+        chest_states = [chest.save_data() for chest in self.chest_sprites]
+        
         scene_key = str(self.current_scene)
         self.game.scene_states[scene_key] = {
             'enemies': enemy_states,
+            'chests': chest_states,
             'time': pygame.time.get_ticks()
         }
             
@@ -253,7 +262,7 @@ class Scene(State):
         if "interactables" in layers:
             for obj in self.tmx_data.get_layer_by_name('interactables'):
                 if obj.name == 'chest':
-                    Chest(self, [self.update_sprites, self.draw_sprites, self.block_sprites], 
+                    Chest(self, [self.update_sprites, self.draw_sprites, self.block_sprites, self.chest_sprites], 
                           (obj.x, obj.y), 'blocks', self.tmx_data)
 
         # Re-apply saved states to the group of enemies
@@ -280,6 +289,14 @@ class Scene(State):
                 # If we aren't resetting to spawn, load full state (HP, Chasing, etc.)
                 if not reset_to_spawn:
                     e.load_data(state)
+
+            # Match saved chest data
+            saved_chests = saved_data.get('chests', [])
+            for chest_data in saved_chests:
+                for chest in self.chest_sprites:
+                    if chest.pos == vect(chest_data['pos']):
+                        chest.load_data(chest_data)
+                        break
 
         if 'detail 1' in layers:
             for x, y, surf in self.tmx_data.get_layer_by_name('detail 1').tiles():
@@ -347,7 +364,51 @@ class Scene(State):
         for index, name in enumerate(debug_list):
             self.game.render_text(name, COLORS['white'], PRIMARY_FONT, 10, (10, 15 * (index + 1)), False)
 
+    def start_upgrade(self):
+        self.is_upgrading = True
+        
+        # Flatten all possible upgrades into a single list to ensure unique selection
+        all_possible = []
+        for color, data in UPGRADE_DATA.items():
+            for option in data['options']:
+                all_possible.append({
+                    'type': color,
+                    'header': data['header'],
+                    'desc': option
+                })
+        
+        # Pick 3 unique upgrades
+        self.upgrade_options = random.sample(all_possible, 3)
+        
+        self.upgrade_rects = []
+        
+        # Calculate rects based on actual card size
+        card_surf = self.game.ui.card_templates['red']
+        card_w, card_h = card_surf.get_size()
+        spacing = 20
+        total_w = (card_w * 3) + (spacing * 2)
+        start_x = (SCREEN_WIDTH - total_w) // 2
+        y = (SCREEN_HEIGHT - card_h) // 2
+        
+        for i in range(3):
+            self.upgrade_rects.append(pygame.Rect(start_x + i * (card_w + spacing), y, card_w, card_h))
+
     def update(self, dt):
+        # Handle Upgrade Pause
+        if self.is_upgrading:
+            mouse_pos = pygame.mouse.get_pos()
+            self.hovered_upgrade = None
+            
+            for i, rect in enumerate(self.upgrade_rects):
+                if rect.collidepoint(mouse_pos):
+                    self.hovered_upgrade = i
+                    if INPUTS['left_click']:
+                        # Selection made
+                        self.is_upgrading = False
+                        self.game.reset_inputs()
+                        break
+            return
+
         # Apply slow-motion multiplier if in death sequence
         effective_dt = dt * self.death_slowdown_dt
         

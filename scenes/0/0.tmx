@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="50" height="28" tilewidth="16" tileheight="16" infinite="0" nextlayerid="12" nextobjectid="49">
+<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="50" height="28" tilewidth="16" tileheight="16" infinite="0" nextlayerid="12" nextobjectid="59">
  <editorsettings>
   <export target="0.csv" format="csv"/>
  </editorsettings>
@@ -171,7 +171,13 @@
    </properties>
   </object>
  </objectgroup>
- <objectgroup id="11" name="interactables"/>
+ <objectgroup id="11" name="interactables">
+  <object id="49" name="chest" x="695.273" y="228" width="16" height="16"/>
+  <object id="55" name="chest" x="712.364" y="259.818" width="16" height="16"/>
+  <object id="56" name="chest" x="736.545" y="232" width="16" height="16"/>
+  <object id="57" name="chest" x="744.182" y="304.909" width="16" height="16"/>
+  <object id="58" name="chest" x="693.636" y="328.182" width="16" height="16"/>
+ </objectgroup>
  <objectgroup id="2" name="entries">
   <object id="10" name="0" x="728.5" y="418.375">
    <point/>

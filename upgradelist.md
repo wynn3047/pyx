@@ -19,7 +19,6 @@ ATTACK/STEALTH
 - +1 Projectile 
 
 MOVEMENT
-- Slightly reduce tumble cd, +1 Tumble charge, +
 - Reduce tumble cd
 - +1 Tumble charge
 - +10 speed cap

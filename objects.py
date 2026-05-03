@@ -100,6 +100,7 @@ class Chest(Object):
                 self.interaction_timer += dt
                 if self.interaction_timer >= self.interaction_duration:
                     self.is_open = True
+                    self.scene.start_upgrade()
                     self.update_appearance()
                     self.interaction_timer = 0
             else:
@@ -107,3 +108,13 @@ class Chest(Object):
         else:
             self.highlighted = False
             self.interaction_timer = 0
+
+    def save_data(self):
+        return {
+            'pos': (self.pos.x, self.pos.y),
+            'is_open': self.is_open
+        }
+    
+    def load_data(self, data):
+        self.is_open = data.get('is_open', False)
+        self.update_appearance()

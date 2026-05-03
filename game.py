@@ -127,7 +127,7 @@ class Game:
     # Dynamic text rendering with font caching
     def render_text(self, text, color, font_path, size, pos, centralized=True):
         # Create a unique key for the font/size combination
-        font_key = f"{font_path}"
+        font_key = f"{font_path}_{size}"
         
         # Load and cache the font if it doesn't exist
         if font_key not in self.fonts:

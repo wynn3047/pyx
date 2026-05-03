@@ -17,6 +17,12 @@ class UI:
         self.stealth_frame = pygame.image.load(STEALTH_CONFIG['frame_path']).convert_alpha()
         self.stealth_fill = pygame.image.load(STEALTH_CONFIG['fill_path']).convert_alpha()
 
+        self.card_templates = {
+            'red': pygame.image.load('assets/ui/card_red.png').convert_alpha(),
+            'green': pygame.image.load('assets/ui/card_green.png').convert_alpha(),
+            'blue': pygame.image.load('assets/ui/card_blue.png').convert_alpha()
+        }
+
         self.restart_button_rect = pygame.Rect(0, 0, 80, 20)
         self.restart_button_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 20)
         
@@ -104,7 +110,7 @@ class UI:
     def draw_hit_overlay(self, screen, player):
         if player and player.is_low_hp and hasattr(player, 'hit_flash_timer') and player.hit_flash_timer > 0:
             overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-            overlay.fill(COLORS['red'])
+            overlay.fill(COLORS['medium_red'])
             overlay.set_alpha(70)
             screen.blit(overlay, (0, 0))
 
@@ -115,15 +121,80 @@ class UI:
                 bar_width = 16
                 bar_height = 2
                 progress = sprite.interaction_timer / sprite.interaction_duration
-                
+
+                # Screen position calculation using camera offset
                 offset = scene.camera.offset
                 x = sprite.rect.left - offset.x
-                y = sprite.rect.top - offset.y 
-                
+                y = sprite.rect.top - offset.y
+
                 # Draw background
-                pygame.draw.rect(screen, COLORS['black'], (x, y, bar_width, bar_height))
+                pygame.draw.rect(screen, (0, 0, 0), (x, y, bar_width, bar_height))
                 # Draw progress
-                pygame.draw.rect(screen, COLORS['white'], (x, y, bar_width * progress, bar_height))
+                pygame.draw.rect(screen, (255, 255, 255), (x, y, bar_width * progress, bar_height))
+
+    def draw_upgrade_overlay(self, screen, scene):
+        if scene.is_upgrading:
+            # Dim background
+            dim_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            dim_surf.fill((0, 0, 0))
+            dim_surf.set_alpha(150)
+            screen.blit(dim_surf, (0, 0))
+
+            # Draw cards
+            for i, upgrade in enumerate(scene.upgrade_options):
+                card_type = upgrade['type']
+                card_surf = self.card_templates[card_type]
+                rect = scene.upgrade_rects[i]
+
+                # Draw card
+                draw_rect = rect.copy()
+                if scene.hovered_upgrade == i:
+                    # Hover effect: move up slightly
+                    draw_rect.y -= 4
+                    screen.blit(card_surf, draw_rect)
+                    highlight = card_surf.copy()
+                    highlight.fill(COLORS['white'], special_flags=pygame.BLEND_RGB_MULT)
+                    highlight.set_alpha(100)
+                    screen.blit(highlight, draw_rect, special_flags=pygame.BLEND_RGB_ADD)
+                else:
+                    screen.blit(card_surf, draw_rect)
+
+                header_y = draw_rect.centery
+                header_color = COLORS.get(card_type, COLORS['white'])
+                self.game.render_text(upgrade['header'], header_color, PRIMARY_FONT, 10, (draw_rect.centerx, header_y))
+
+                desc_rect = draw_rect.inflate(-8, -25)
+                desc_rect.top = draw_rect.top + 18
+                self.draw_wrapped_text(screen, upgrade['desc'], COLORS['white'], PRIMARY_FONT, 9, desc_rect)
+
+    def draw_wrapped_text(self, screen, text, color, font_path, size, rect):
+        # Cache font
+        font_key = f"{font_path}_{size}"
+        if font_key not in self.game.fonts:
+            self.game.fonts[font_key] = pygame.font.Font(font_path, size)
+        font = self.game.fonts[font_key]
+
+        words = text.split(' ')
+        lines = []
+        current_line = []
+
+        for word in words:
+            test_line = ' '.join(current_line + [word])
+            if font.size(test_line)[0] <= rect.width - 6:
+                current_line.append(word)
+            else:
+                lines.append(' '.join(current_line))
+                current_line = [word]
+        lines.append(' '.join(current_line))
+
+        # Render lines centered in rect
+        total_height = len(lines) * font.get_linesize()
+        start_y = 27 + rect.top + (rect.height - total_height) // 2
+
+        for i, line in enumerate(lines):
+            surf = font.render(line, False, color)
+            line_rect = surf.get_rect(center=(rect.centerx, start_y + i * font.get_linesize()))
+            screen.blit(surf, line_rect)
 
     def apply_grayscale_bleed(self, screen, amount):
         temp_surf = screen.copy()
@@ -181,3 +252,4 @@ class UI:
         self.draw_tumble_ui(screen, player)
         self.draw_stealth_bar(screen, player)
         self.draw_interaction_bars(screen, scene)
+        self.draw_upgrade_overlay(screen, scene)
