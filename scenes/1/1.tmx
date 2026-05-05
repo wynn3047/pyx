@@ -132,6 +132,7 @@
   <object id="6" name="spawners" x="84.4242" y="98.4242" width="113.818" height="34.8182">
    <properties>
     <property name="count" type="int" value="5"/>
+    <property name="enemy_type" value="enemy, mage"/>
    </properties>
   </object>
   <object id="8" name="spawners" x="123.5" y="144" width="39" height="17.25">

@@ -33,8 +33,8 @@ class Player(GameCharacter):
 
         self.throw_vel = 350
         self.throw_rate = 14
-        self.throw_dmg_min = 10
-        self.throw_dmg_max = 20
+        self.throw_dmg_min = 15
+        self.throw_dmg_max = 30
         self.throw_damage = random.uniform(self.throw_dmg_min, self.throw_dmg_max)
         self.throw_knockback = PLAYER_COMBAT_CONFIG['player_dagger_knockback']
         # Combat Upgrades

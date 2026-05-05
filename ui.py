@@ -230,16 +230,45 @@ class UI:
         pygame.draw.rect(screen, exit_color, self.exit_button_rect, border_radius=3)
         self.game.render_text('EXIT', exit_text_color, PRIMARY_FONT, 10, self.exit_button_rect.center)
 
+    def draw_mage_telegraphs(self, screen, scene):
+        for enemy in scene.enemy_sprites:
+            # Check if this is a Mage in Cast state by looking at its attributes/string
+            if hasattr(enemy, 'target_pos') and enemy.target_pos and str(enemy.state) == 'MageCast':
+                # Calculate screen position
+                offset = scene.camera.offset
+                target_screen_pos = enemy.target_pos - offset
+                
+                base_radius = getattr(enemy, 'aoe_radius', 20)
+                radius =base_radius
+                
+                progress = max(0.0, min(1.0, 1.0 - (enemy.state.timer / enemy.cast_duration)))
+                alpha = max(0, min(255, 100 + int(155 * progress)))
+                color = COLORS['medium_red']
+                
+                s_width, s_height = int(radius * 2.5), int(radius * 2)
+                s = pygame.Surface((s_width, s_height), pygame.SRCALPHA)
+                
+                rgba_color = pygame.Color(*color, alpha)
+                glow_color = pygame.Color(*color, alpha // 2)
+                
+                pygame.draw.ellipse(s, glow_color, s.get_rect())
+                
+                # Draw inner outline
+                inner_rect = s.get_rect().inflate(-4, -4)
+                pygame.draw.ellipse(s, rgba_color, inner_rect, 2)
+                
+                screen.blit(s, s.get_rect(center=target_screen_pos))
+
     def draw(self, screen, scene):
         player = scene.player
         if not player: return
 
         self.draw_hit_overlay(screen, player)
-        
         self.draw_hearts(screen, player)
         self.draw_tumble_ui(screen, player)
         self.draw_stealth_bar(screen, player)
         self.draw_interaction_bars(screen, scene)
+        self.draw_mage_telegraphs(screen, scene)
         self.draw_upgrade_overlay(screen, scene)
         
         if scene.is_dead:

@@ -63,7 +63,6 @@ class Enemy(GameCharacter):
             if direction.length() < 1:
                 return vect(1, 0)  
             
-            # Refresh aggro timer if player is still within normal detection range
             if distance < self.detection_radius:
                 self.aggro_timer = self.aggro_duration
                 
@@ -400,7 +399,7 @@ class Tank(Enemy):
         self.contact_damage = random.uniform(30, 45)
         self.contact_knockback = 120 
         
-        self.knockback_speed = 20 
+        self.knockback_speed = 10 
         self.stun_resistance = 0.10 
 
     def take_damage(self, amount, knockback_dir=None, knockback_force=None, knockback_stun=0.25):
@@ -411,7 +410,9 @@ class Tank(Enemy):
         super().take_damage(amount, knockback_dir, force, effective_stun)
 
 # Registry for spawning
+from mage import Mage
 ENEMY_TYPES = {
     'enemy': Enemy,
-    'tank': Tank
+    'tank': Tank,
+    'mage': Mage
 }
