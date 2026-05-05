@@ -132,7 +132,7 @@ UPGRADE_DATA = {
             'Increase attack speed and vel',
             'Increment stealth strike multiplier',
             'Decrease normal attack stealth reduction',
-            '+1 Projectile count +20 spread',
+            '+1 Projectile count +15 spread',
             '+1 Burst count',
             '+1 Pierce',
             '+1 Ricochet'

@@ -15,7 +15,12 @@ class Enemy(GameCharacter):
         self.detection_radius = 150
         self.is_chasing = False
         
-        # Combat
+        # Base Stats 
+        self.wander_speed = 25
+        self.chase_speed = 55
+        self.chase_force = 2250
+        
+        # Combat Defaults
         self.contact_damage = random.randint(25, 40)
         self.contact_cooldown = 1
         self.contact_cooldown_timer = 0
@@ -36,7 +41,7 @@ class Enemy(GameCharacter):
         self.spawn_pos = vect(pos)
         self.state = EnemyIdle(self)  # Initial AI state
         self.frict = 10 
-        self.knockback_speed = 50
+        self.knockback_speed = 50 # Force received when hit
         self.got_hit = False
 
     def movement(self):
@@ -70,14 +75,14 @@ class Enemy(GameCharacter):
         if not isinstance(self.state, Chase):
             self.state = Chase(self)
     
-    def take_damage(self, amount, knockback_dir=None, knockback_stun=0.25):
-        # Keep existing knockback logic
-        super().take_damage(amount, knockback_dir, knockback_stun)
+    def take_damage(self, amount, knockback_dir=None, knockback_force=None, knockback_stun=0.25):
+        # Base enemy uses the force passed or its own knockback_speed
+        super().take_damage(amount, knockback_dir, knockback_force, knockback_stun)
         # Set aggro timer and force a state transition to Chase
         self.aggro_timer = self.aggro_duration
         self.state = Chase(self)
         self.got_hit = True
-        
+
     def pick_waypoint(self):
         # Picks a random point around the spawn position to walk towards
         map_w, map_h = self.scene.camera.scene_size
@@ -113,6 +118,7 @@ class Enemy(GameCharacter):
     def save_data(self):
         #Returns a dict for persistent state ddata
         return {
+            'type': self.__class__.__name__.lower() if self.__class__.__name__ != 'Enemy' else 'enemy',
             'pos': (self.pos.x, self.pos.y),
             'is_chasing': self.is_chasing,
             'spawn_pos': (self.spawn_pos.x, self.spawn_pos.y),
@@ -286,7 +292,7 @@ class Wander:
     # State when enemy is moving towards a random waypoint
     def __init__(self, enemy):
         enemy.frame_index = 0
-        enemy.speed = 25
+        enemy.speed = enemy.wander_speed
         
     def __str__(self):
         return "Wander"
@@ -320,8 +326,8 @@ class Chase:
     def __init__(self, enemy):
         enemy.frame_index = 0
         enemy.is_chasing = True
-        enemy.speed = 55
-        enemy.force = 2250
+        enemy.speed = enemy.chase_speed
+        enemy.force = enemy.chase_force
         
     def __str__(self):
         return "Chase"
@@ -376,3 +382,36 @@ class Death:
             self.despawn_timer -= dt
             if self.despawn_timer <= 0:
                 enemy.kill()
+
+class Tank(Enemy):
+    """
+    Heavy enemy variant. High HP, low speed, resistant to knockback and stun.
+    """
+    def __init__(self, game, scene, groups, pos, z, name, direction='right'):
+        super().__init__(game, scene, groups, pos, z, name, direction)
+        
+        self.hp = 120
+        self.max_hp = 120
+        
+        self.wander_speed = 20
+        self.chase_speed = 35
+        self.chase_force = 1700
+        
+        self.contact_damage = random.uniform(30, 45)
+        self.contact_knockback = 120 
+        
+        self.knockback_speed = 20 
+        self.stun_resistance = 0.10 
+
+    def take_damage(self, amount, knockback_dir=None, knockback_force=None, knockback_stun=0.25):
+        # Apply resistances
+        force = knockback_force * 0.4 if knockback_force is not None else self.knockback_speed
+        
+        effective_stun = max(0, knockback_stun - self.stun_resistance)
+        super().take_damage(amount, knockback_dir, force, effective_stun)
+
+# Registry for spawning
+ENEMY_TYPES = {
+    'enemy': Enemy,
+    'tank': Tank
+}

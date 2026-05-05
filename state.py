@@ -211,22 +211,24 @@ class Scene(State):
                 Collider([self.exit_sprites], (obj.x, obj.y), (obj.width, obj.height), obj.name)
 
         if "entities" in layers:
-            from enemy import Enemy
+            from enemy import Enemy, ENEMY_TYPES
             for obj in self.tmx_data.get_layer_by_name('entities'):  
                 obj_direction = obj.properties.get('direction', 'right')
-                if obj.name == 'enemy':
-                    Enemy(self.game, self, [self.update_sprites, self.draw_sprites, self.enemy_sprites],
-                                         (obj.x, obj.y),
-                                         'blocks',
-                                         'enemy',
-                                         obj_direction)
+                # Use obj.name (e.g., 'enemy' or 'tank') to look up the correct class
+                enemy_class = ENEMY_TYPES.get(obj.name, Enemy)
+                enemy_class(self.game, self, [self.update_sprites, self.draw_sprites, self.enemy_sprites],
+                                     (obj.x, obj.y),
+                                     'blocks',
+                                     obj.name,
+                                     obj_direction)
         
         # Randomly spawn enemies within Tiled shapes (i'll be using rectangle)
         if "spawners" in layers:
-            from enemy import Enemy
+            from enemy import Enemy, ENEMY_TYPES
             for obj in self.tmx_data.get_layer_by_name('spawners'):
                 count = obj.properties.get('count', 1)
-                enemy_type = obj.properties.get('enemy_type', 'enemy')
+                # Support multiple types via comma-separated list "enemy,tank"
+                enemy_types = obj.properties.get('enemy_type', 'enemy').replace(' ', '').split(',')
                 
                 for i in range(count):
                     spawned = False
@@ -255,8 +257,10 @@ class Scene(State):
                                     break
 
                         if not is_blocked:
-                            Enemy(self.game, self, [self.update_sprites, self.draw_sprites, self.enemy_sprites],
-                                  (rx, ry), 'blocks', enemy_type)
+                            selected_type = random.choice(enemy_types)
+                            enemy_class = ENEMY_TYPES.get(selected_type, Enemy)
+                            enemy_class(self.game, self, [self.update_sprites, self.draw_sprites, self.enemy_sprites],
+                                  (rx, ry), 'blocks', selected_type)
                             spawned = True
 
         if "interactables" in layers:
@@ -270,21 +274,23 @@ class Scene(State):
         if saved_data:
             # Match saved data to current enemies
             for e in self.enemy_sprites: e.kill()
-            from enemy import Enemy
+            from enemy import Enemy, ENEMY_TYPES
             
             saved_enemies = saved_data['enemies']
             saved_time = saved_data['time']
             current_time = pygame.time.get_ticks()
 
-            # If player has been gone for more than 15 seconds, enemies return to spawn
+            # If player has been gone for more than 5 seconds, enemies return to spawn
             reset_to_spawn = (current_time - saved_time) > 5000 
             
             for state in saved_enemies:
                 # Decide position based on timer
                 pos = state['spawn_pos'] if reset_to_spawn else state['pos']
+                etype = state.get('type', 'enemy')
                 
-                e = Enemy(self.game, self, [self.update_sprites, self.draw_sprites, self.enemy_sprites],
-                          pos, 'blocks', 'enemy')
+                enemy_class = ENEMY_TYPES.get(etype, Enemy)
+                e = enemy_class(self.game, self, [self.update_sprites, self.draw_sprites, self.enemy_sprites],
+                          pos, 'blocks', etype)
                 
                 # If we aren't resetting to spawn, load full state (HP, Chasing, etc.)
                 if not reset_to_spawn:
@@ -410,9 +416,9 @@ class Scene(State):
             p.stealth_velocity_mult += 0.1
         elif desc == 'Decrease normal attack stealth reduction':
             p.stealth_attack_consumption = max(6, p.stealth_attack_consumption - 6)
-        elif desc == '+1 Projectile count +20 spread':
+        elif desc == '+1 Projectile count +15 spread':
             p.proj_count += 1
-            p.proj_spread += 20
+            p.proj_spread += 15
         elif desc == '+1 Burst count':
             p.proj_burst_count += 1
         elif desc == '+1 Pierce':

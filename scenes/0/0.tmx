@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="50" height="28" tilewidth="16" tileheight="16" infinite="0" nextlayerid="12" nextobjectid="59">
+<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="50" height="28" tilewidth="16" tileheight="16" infinite="0" nextlayerid="12" nextobjectid="62">
  <editorsettings>
   <export target="0.csv" format="csv"/>
  </editorsettings>
@@ -142,27 +142,32 @@
  <objectgroup id="9" name="spawners">
   <object id="35" name="spawners" x="432" y="127.333" width="112.333" height="32.3333">
    <properties>
-    <property name="count" type="int" value="3"/>
+    <property name="count" type="int" value="4"/>
+    <property name="enemy_type" value="enemy, tank"/>
    </properties>
   </object>
   <object id="36" name="spawners" x="68.6663" y="349.333" width="151" height="26.3334">
    <properties>
-    <property name="count" type="int" value="4"/>
+    <property name="count" type="int" value="7"/>
+    <property name="enemy_type" value="enemy, tank"/>
    </properties>
   </object>
   <object id="38" name="spawners" x="431.667" y="272" width="52" height="49">
    <properties>
     <property name="count" type="int" value="3"/>
+    <property name="enemy_type" value="enemy, tank"/>
    </properties>
   </object>
   <object id="42" name="spawners" x="201.333" y="133.667" width="51.6667" height="40.6667">
    <properties>
-    <property name="count" type="int" value="3"/>
+    <property name="count" type="int" value="4"/>
+    <property name="enemy_type" value="enemy, tank"/>
    </properties>
   </object>
   <object id="44" name="spawners" x="78" y="219.667" width="33.3333" height="15">
    <properties>
-    <property name="count" type="int" value="2"/>
+    <property name="count" type="int" value="3"/>
+    <property name="enemy_type" value="tank"/>
    </properties>
   </object>
   <object id="46" name="spawners" x="711.318" y="85.5" width="23.6136" height="8.29545">
@@ -170,13 +175,16 @@
     <property name="count" type="int" value="1"/>
    </properties>
   </object>
+  <object id="61" name="spawners" x="402.667" y="210" width="32.3333" height="35.6667">
+   <properties>
+    <property name="count" type="int" value="4"/>
+    <property name="enemy_type" value="enemy"/>
+   </properties>
+  </object>
  </objectgroup>
  <objectgroup id="11" name="interactables">
-  <object id="49" name="chest" x="695.273" y="228" width="16" height="16"/>
-  <object id="55" name="chest" x="712.364" y="259.818" width="16" height="16"/>
-  <object id="56" name="chest" x="736.545" y="232" width="16" height="16"/>
-  <object id="57" name="chest" x="744.182" y="304.909" width="16" height="16"/>
-  <object id="58" name="chest" x="693.636" y="328.182" width="16" height="16"/>
+  <object id="59" name="chest" x="463.03" y="240.606" width="16" height="16"/>
+  <object id="60" name="chest" x="186.333" y="383.667" width="16" height="16"/>
  </objectgroup>
  <objectgroup id="2" name="entries">
   <object id="10" name="0" x="728.5" y="418.375">
