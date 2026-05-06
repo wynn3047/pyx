@@ -22,7 +22,7 @@ class Game:
         self.fonts = {} 
         
         self.running = True
-        self.fps = 60  
+        self.fps = 60
 
         self.states = []
         self.splash_screen = SplashScreen(self)

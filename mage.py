@@ -17,8 +17,8 @@ class Explosion(pygame.sprite.Sprite):
         
         self.rect = self.image.get_rect(midbottom=pos) # So it matches the sprite
         self.pos = vect(pos) 
-        
-        self.damage_frames = [2, 3, 4, 5, 6]
+        self.hitbox = self.rect
+        self.damage_frames = [2, 3, 4, 5]
         self.has_damaged = False
         self.explosion_radius = radius 
         self.damage = random.uniform(40, 55)
@@ -165,7 +165,7 @@ class MageWander(Wander):
             mage.pick_waypoint()
             
         direction = mage.wander_waypoint - mage.pos
-        if direction.length() < 32:
+        if direction.length() < 24:
             mage.vel = vect(0, 0)
             return MageIdle(mage)
         return None
