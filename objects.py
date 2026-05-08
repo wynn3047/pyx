@@ -48,7 +48,7 @@ class Chest(Object):
         }
         
         
-        tileset_surf = pygame.image.load('assets/tilesets/tileset_2.png').convert_alpha()
+        tileset_surf = pygame.image.load(resource_path('assets/tilesets/tileset_2.png')).convert_alpha()
         cols = tileset_surf.get_width() // 16
         
         self.surfaces = {}

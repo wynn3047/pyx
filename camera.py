@@ -17,7 +17,8 @@ class Camera(pygame.sprite.Group):
     # Capturing screen size for tilemap
     def get_scene_size(self, scene):
         # Open current scene's CSV to get its dimensions
-        with open(f'scenes/{scene.current_scene}/{scene.current_scene}.csv', newline='') as csvfile:
+        path = resource_path(f'scenes/{scene.current_scene}/{scene.current_scene}.csv')
+        with open(path, newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter=',')
             for row in reader:
                 cols = (len(row)) # Len of cells in row

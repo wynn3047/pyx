@@ -1,4 +1,5 @@
 import pygame, sys, os
+
 from settings import *
 from state import SplashScreen
 from ui import UI
@@ -131,7 +132,7 @@ class Game:
         
         # Load and cache the font if it doesn't exist
         if font_key not in self.fonts:
-            self.fonts[font_key] = pygame.font.Font(font_path, size)
+            self.fonts[font_key] = pygame.font.Font(resource_path(font_path), size)
             
         font = self.fonts[font_key]
         text_surf = font.render(str(text), False, color)
@@ -141,7 +142,7 @@ class Game:
     # Implementing custom cursor
     def custom_cursor(self, screen):
         pygame.mouse.set_visible(False)
-        cursor_image = pygame.image.load('assets/mouse-cursor/my_custom_cursor.png').convert_alpha()
+        cursor_image = pygame.image.load(resource_path('assets/mouse-cursor/my_custom_cursor.png')).convert_alpha()
         scaled_cursor_image = pygame.transform.scale(cursor_image, (10, 10)) # scale image
         cursor_rect = scaled_cursor_image.get_rect(topleft=(pygame.mouse.get_pos())) # Clicks for top left (0,0)
         cursor_image.set_alpha(235) # Slight transparency
@@ -151,10 +152,11 @@ class Game:
     def get_images(self, path):
         images = []
         # Sort files numerically to avoid [0, 1, 10, 11...] sorting issues
-        file_list = sorted(os.listdir(path), key=lambda f: int(f.split('.')[0]) if f.split('.')[0].isdigit() else f)
+        abs_path = resource_path(path)
+        file_list = sorted(os.listdir(abs_path), key=lambda f: int(f.split('.')[0]) if f.split('.')[0].isdigit() else f)
         
         for file in file_list: 
-            full_path = os.path.join(path, file) 
+            full_path = os.path.join(abs_path, file) 
             image = pygame.image.load(full_path).convert_alpha()
             images.append(image)
         return images
@@ -162,7 +164,8 @@ class Game:
     # Creates empty dict to store filenames as keys
     def get_animations(self, path):
         animations = {}
-        for file_name in os.listdir(path): # listdir iterates through all files from that file path
+        abs_path = resource_path(path)
+        for file_name in os.listdir(abs_path): # listdir iterates through all files from that file path
             animations.update({file_name: []}) # adds each filename as key with empty []
         return animations
 

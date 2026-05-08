@@ -136,7 +136,7 @@ class Scene(State):
         self.player = None
         self.trapdoor = None
         
-        self.tmx_data = load_pygame(f'scenes/{self.current_scene}/{self.current_scene}.tmx') # Load Tilemap data
+        self.tmx_data = load_pygame(resource_path(f'scenes/{self.current_scene}/{self.current_scene}.tmx')) # Load Tilemap data
         self.create_scene() # Make the scene
         self.transition = Transition(self.go_to_scene)
         

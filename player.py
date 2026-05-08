@@ -265,7 +265,7 @@ class Player(GameCharacter):
                 knockback_force=self.throw_knockback,
                 pierce_count=pierce,
                 ricochet_count=ricochet,
-                sprite_path='assets\characters\player\weapon\dagger.png'
+                sprite_path='assets/characters/player/weapon/dagger.png'
             )
 
     def update(self, dt):

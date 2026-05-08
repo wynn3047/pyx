@@ -8,7 +8,7 @@ class Projectile(pygame.sprite.Sprite):
         self.scene = scene
         self.z = 'holes' 
         
-        self.original_image = pygame.image.load(sprite_path).convert_alpha()
+        self.original_image = pygame.image.load(resource_path(sprite_path)).convert_alpha()
         
         self.pos = vect(pos)
         self.direction = direction

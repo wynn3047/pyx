@@ -7,20 +7,20 @@ class UI:
     def __init__(self, game):
         self.game = game
         
-        self.heart_sprite = pygame.image.load(HP_CONFIG['heart_path']).convert_alpha()
+        self.heart_sprite = pygame.image.load(resource_path(HP_CONFIG['heart_path'])).convert_alpha()
         self.black_heart_sprite = self.heart_sprite.copy()
         self.black_heart_sprite.fill(COLORS['black'], special_flags=pygame.BLEND_RGB_MULT)
 
-        self.tumble_frame = pygame.image.load(TUMBLE_UI_CONFIG['frame_path']).convert_alpha()
-        self.tumble_fill = pygame.image.load(TUMBLE_UI_CONFIG['fill_path']).convert_alpha()
+        self.tumble_frame = pygame.image.load(resource_path(TUMBLE_UI_CONFIG['frame_path'])).convert_alpha()
+        self.tumble_fill = pygame.image.load(resource_path(TUMBLE_UI_CONFIG['fill_path'])).convert_alpha()
         
-        self.stealth_frame = pygame.image.load(STEALTH_CONFIG['frame_path']).convert_alpha()
-        self.stealth_fill = pygame.image.load(STEALTH_CONFIG['fill_path']).convert_alpha()
+        self.stealth_frame = pygame.image.load(resource_path(STEALTH_CONFIG['frame_path'])).convert_alpha()
+        self.stealth_fill = pygame.image.load(resource_path(STEALTH_CONFIG['fill_path'])).convert_alpha()
 
         self.card_templates = {
-            'red': pygame.image.load('assets/ui/card_red.png').convert_alpha(),
-            'green': pygame.image.load('assets/ui/card_green.png').convert_alpha(),
-            'blue': pygame.image.load('assets/ui/card_blue.png').convert_alpha()
+            'red': pygame.image.load(resource_path('assets/ui/card_red.png')).convert_alpha(),
+            'green': pygame.image.load(resource_path('assets/ui/card_green.png')).convert_alpha(),
+            'blue': pygame.image.load(resource_path('assets/ui/card_blue.png')).convert_alpha()
         }
 
         self.restart_button_rect = pygame.Rect(0, 0, 80, 20)
@@ -171,7 +171,7 @@ class UI:
         # Cache font
         font_key = f"{font_path}_{size}"
         if font_key not in self.game.fonts:
-            self.game.fonts[font_key] = pygame.font.Font(font_path, size)
+            self.game.fonts[font_key] = pygame.font.Font(resource_path(font_path), size)
         font = self.game.fonts[font_key]
 
         words = text.split(' ')

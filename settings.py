@@ -1,4 +1,14 @@
+import os, sys
 from pygame.math import Vector2 as vect
+
+# For making it executable via Pyinstaller
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 400, 224
 TILE_SIZE = 16

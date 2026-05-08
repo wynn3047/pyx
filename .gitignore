@@ -5,3 +5,18 @@
 /httpRequests/
 
 .gemini/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# PyInstaller
+build/
+dist/
+*.spec
