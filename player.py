@@ -133,15 +133,23 @@ class Player(GameCharacter):
         for exit in self.scene.exit_sprites:
             if self.hitbox.colliderect(exit.rect):
                 # Retrieve destination scene and entry point from settings
-                # Use strings for consistent lookup
                 current_scene_id = str(self.scene.current_scene)
                 exit_id = str(exit.number)
-                
+
                 if current_scene_id in SCENE_DATA and exit_id in SCENE_DATA[current_scene_id]:
-                    self.scene.new_scene = SCENE_DATA[current_scene_id][exit_id]
+                    target_scene = SCENE_DATA[current_scene_id][exit_id]
+
+                    # Backtracking restriction
+                    current_level = SCENE_LEVEL_MAP.get(current_scene_id, 0)
+                    target_level = SCENE_LEVEL_MAP.get(target_scene, 0)
+
+                    if target_level < current_level:
+                        continue
+
+                    self.scene.new_scene = target_scene
                     self.scene.entry_point = exit_id # ID of the door to spawn at in the next scene
                     self.scene.transition.exiting = True # Start the visual fade out
-
+                    
     def save_data(self):
           # Return player data
           return {

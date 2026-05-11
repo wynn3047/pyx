@@ -4,7 +4,7 @@ from settings import *
 from camera import Camera
 from transition import Transition
 from player import Player
-from objects import Collider,Object, Wall, Holes, Chest
+from objects import Collider,Object, Wall, Holes, Chest, Trapdoor
 from pytmx.util_pygame import load_pygame
 
 class State:
@@ -55,6 +55,8 @@ class SplashScreen(State):
     def draw(self, screen):
         screen.fill((COLORS['charcoal_grey']))
         self.game.render_text('PyX', COLORS['white'], HEAD_FONT, 32, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        self.game.render_text("Press 'Enter' to continue.", COLORS['white'], PRIMARY_FONT, TILE_SIZE, (SCREEN_WIDTH // 2, 210))
+
         self.transition.draw(screen)
 
 # Loading Screen State
@@ -167,6 +169,10 @@ class Scene(State):
             'time': pygame.time.get_ticks()
         }
             
+        # Update Dungeon Level if entering a new one
+        next_level = SCENE_LEVEL_MAP.get(str(self.new_scene), 0)
+        self.game.dungeon_level = max(self.game.dungeon_level, next_level)
+
         Scene(self.game, self.new_scene, self.entry_point).enter_state()
     
     def create_scene(self): 
@@ -211,11 +217,16 @@ class Scene(State):
                 Collider([self.exit_sprites], (obj.x, obj.y), (obj.width, obj.height), obj.name)
 
         if "entities" in layers:
-            from enemy import Enemy, ENEMY_TYPES
+            from enemy import Enemy, ENEMY_TYPES, Mage
             for obj in self.tmx_data.get_layer_by_name('entities'):  
                 obj_direction = obj.properties.get('direction', 'right')
                 # Use obj.name (e.g., 'enemy' or 'tank') to look up the correct class
                 enemy_class = ENEMY_TYPES.get(obj.name, Enemy)
+                
+                # Filter out mages in scene 0 and 1
+                if self.current_scene in ['0', '1'] and enemy_class == Mage:
+                    continue
+                    
                 enemy_class(self.game, self, [self.update_sprites, self.draw_sprites, self.enemy_sprites],
                                      (obj.x, obj.y),
                                      'blocks',
@@ -224,12 +235,18 @@ class Scene(State):
         
         # Randomly spawn enemies within Tiled shapes (i'll be using rectangle)
         if "spawners" in layers:
-            from enemy import Enemy, ENEMY_TYPES
+            from enemy import Enemy, ENEMY_TYPES, Mage
             for obj in self.tmx_data.get_layer_by_name('spawners'):
                 count = obj.properties.get('count', 1)
                 # Support multiple types via comma-separated list "enemy,tank"
                 enemy_types = obj.properties.get('enemy_type', 'enemy').replace(' ', '').split(',')
                 
+                # Filter out mages in scene 0 and 1 from the available pool
+                if self.current_scene in ['0', '1']:
+                    enemy_types = [t for t in enemy_types if t != 'mage']
+                
+                if not enemy_types: continue
+
                 for i in range(count):
                     spawned = False
                     attempts = 0
@@ -268,6 +285,10 @@ class Scene(State):
                 if obj.name == 'chest':
                     Chest(self, [self.update_sprites, self.draw_sprites, self.block_sprites, self.chest_sprites], 
                           (obj.x, obj.y), 'blocks', self.tmx_data)
+                elif obj.name == 'trapdoor':
+                    self.trapdoor = Trapdoor(self, [self.update_sprites, self.draw_sprites], 
+                                            (obj.x, obj.y), 'floors')
+
 
         # Re-apply saved states to the group of enemies
         saved_data = self.game.scene_states.get(str(self.current_scene))
@@ -416,9 +437,9 @@ class Scene(State):
             p.stealth_velocity_mult += 0.1
         elif desc == 'Decrease normal attack stealth reduction':
             p.stealth_attack_consumption = max(6, p.stealth_attack_consumption - 6)
-        elif desc == '+1 Projectile count +15 spread':
+        elif desc == '+1 Projectile count +5 spread':
             p.proj_count += 1
-            p.proj_spread += 15
+            p.proj_spread += 5
         elif desc == '+1 Burst count':
             p.proj_burst_count += 1
         elif desc == '+1 Pierce':

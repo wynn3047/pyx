@@ -259,6 +259,35 @@ class UI:
                 
                 screen.blit(s, s.get_rect(center=target_screen_pos))
 
+    def draw_enemy_count(self, screen, scene):
+        # Calculate total enemies in current dungeon level
+        current_level_id = SCENE_LEVEL_MAP.get(str(scene.current_scene), 0)
+        scenes_in_level = DUNGEON_LEVELS.get(current_level_id, [])
+        total_enemies = 0
+        all_scenes_visited = True
+        
+        for s_id in scenes_in_level:
+            s_id_str = str(s_id)
+            if s_id_str == str(scene.current_scene):
+                alive_in_scene = [e for e in scene.enemy_sprites if e.hp > 0]
+                total_enemies += len(alive_in_scene)
+            else:
+                state = self.game.scene_states.get(s_id_str)
+                if state:
+                    total_enemies += len(state.get('enemies', []))
+                else:
+                    all_scenes_visited = False
+
+        if not all_scenes_visited or total_enemies > 0:
+            text = f"ENEMIES LEFT: {total_enemies}{'+' if not all_scenes_visited else ''}"
+            pos = (SCREEN_WIDTH // 2, 10)
+            self.game.render_text(text, COLORS['white'], PRIMARY_FONT, 11, pos)
+            
+        else:
+            text = "LEVEL CLEARED! FIND THE TRAPDOOR"
+            pos = (SCREEN_WIDTH // 2, 10)
+            self.game.render_text(text, COLORS['light_pink'], PRIMARY_FONT, 11, pos)
+
     def draw(self, screen, scene):
         player = scene.player
         if not player: return
@@ -267,6 +296,7 @@ class UI:
         self.draw_hearts(screen, player)
         self.draw_tumble_ui(screen, player)
         self.draw_stealth_bar(screen, player)
+        self.draw_enemy_count(screen, scene) 
         self.draw_interaction_bars(screen, scene)
         self.draw_mage_telegraphs(screen, scene)
         self.draw_upgrade_overlay(screen, scene)

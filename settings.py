@@ -66,10 +66,10 @@ HP_CONFIG = { # + invincibility and knock
 
 PLAYER_COMBAT_CONFIG = {
     'player_dagger_knockback': 60,
-    'proj_pierce_count': 0,      
+    'proj_pierce_count': 3,      
     'proj_count': 1,             
-    'proj_spread_angle': 20,     
-    'proj_burst_count': 1,       
+    'proj_spread_angle': 15,     
+    'proj_burst_count': 4,       
     'proj_burst_delay': 0.1,     
     'proj_ricochet_count': 0,
     'proj_spawn_offset': 7
@@ -142,7 +142,7 @@ UPGRADE_DATA = {
             'Increase attack speed and vel',
             'Increment stealth strike multiplier',
             'Decrease normal attack stealth reduction',
-            '+1 Projectile count +15 spread',
+            '+1 Projectile count +5 spread',
             '+1 Burst count',
             '+1 Pierce',
             '+1 Ricochet'
@@ -188,6 +188,22 @@ SHADOW_CONFIG = {
 }
 
 SCENE_DATA = {
-    '0': {'1': '1'},
-    '1': {'1': '0'}
+    '0': {'1': '1', 'trapdoor': '2'}, 
+    '1': {'1': '0'},
+    '2': {'3': '3'}                   
+}
+
+# Progression Config
+DUNGEON_LEVELS = {
+    0: ['0', '1'],
+    1: ['2', '3'],
+    2: ['4', '5']
+}
+
+
+# Quick lookup for which level a scene belongs to
+SCENE_LEVEL_MAP = {
+    '0': 0, '1': 0,
+    '2': 1, '3': 1,
+    '4': 2, '5': 2
 }

@@ -118,3 +118,48 @@ class Chest(Object):
     def load_data(self, data):
         self.is_open = data.get('is_open', False)
         self.update_appearance()
+
+class Trapdoor(Object):
+    def __init__(self, scene, groups, pos, z):
+        super().__init__(groups, pos, z)
+        self.scene = scene
+        
+        self.local_ids = {
+            'closed': 3,
+            'open': 13
+        }
+        
+        tileset_surf = pygame.image.load(resource_path('assets/tilesets/tileset_0.png')).convert_alpha()
+        cols = tileset_surf.get_width() // 16
+        
+        self.surfaces = {}
+        for name, tid in self.local_ids.items():
+            col = tid % cols
+            row = tid // cols
+            tile_rect = pygame.Rect(col * 16, row * 16, 16, 16)
+            self.surfaces[name] = tileset_surf.subsurface(tile_rect).copy()
+
+        self.is_open = False
+        self.image = self.surfaces['closed']
+        self.rect = self.image.get_rect(topleft=pos)
+        self.hitbox = pygame.Rect(0,0,0,0) 
+        self.trigger_rect = self.rect.copy().inflate(-4, -4) 
+
+    def update(self, dt):
+        # Check if level is cleared
+        current_level = SCENE_LEVEL_MAP.get(str(self.scene.current_scene), 0)
+        if self.scene.game.is_level_cleared(current_level):
+            self.is_open = True
+            self.image = self.surfaces['open']
+        else:
+            self.is_open = False
+            self.image = self.surfaces['closed']
+
+        if self.is_open:
+            if self.trigger_rect.colliderect(self.scene.player.hitbox):
+                # Trigger transition to next level
+                target_data = SCENE_DATA.get(str(self.scene.current_scene), {}).get('trapdoor')
+                if target_data:
+                    self.scene.new_scene = target_data
+                    self.scene.entry_point = '2'
+                    self.scene.transition.exiting = True

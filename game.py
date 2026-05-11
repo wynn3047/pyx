@@ -31,6 +31,36 @@ class Game:
 
         self.player_data = {}
         self.scene_states = {} # Stores persistent data for each room/scene
+        self.dungeon_level = 0 
+
+    def is_level_cleared(self, level_id):
+        scenes = DUNGEON_LEVELS.get(level_id, [])
+        if not scenes: return False
+
+        for scene_id in scenes:
+            scene_id_str = str(scene_id)
+            
+            # Check if this scene is the one currently active
+            current_state = self.states[-1]
+            from state import Scene
+            if isinstance(current_state, Scene) and str(current_state.current_scene) == scene_id_str:
+                alive_enemies = [e for e in current_state.enemy_sprites if e.hp > 0]
+                if len(alive_enemies) > 0:
+                    return False
+                continue 
+
+            # Check saved state
+            state = self.scene_states.get(scene_id_str)
+            if state:
+                # If there are any enemies left in the saved state of this scene
+                if len(state.get('enemies', [])) > 0:
+                    return False
+            else:
+                # A level is not cleared if you haven't even stepped into one of its rooms
+                return False
+        
+        return True
+
     # Pygame events
     def get_inputs(self):
         for event in pygame.event.get():
